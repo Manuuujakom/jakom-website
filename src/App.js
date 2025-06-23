@@ -61,29 +61,31 @@ const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
   }, []); // Empty dependency array means this effect runs once on mount
 
   return (
-    <div
-      ref={cardRef} // Attach the local ref to this div
-      // Conditional classes: initial hidden state, then transition to visible
-      className={`
-        bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg
-        transition-all duration-700 ease-out transform
-        ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
-        hover:scale-105 hover:shadow-2xl
-      `}
-      // The delay is now applied to the transition itself, for cumulative effect per card
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      <Link to={path} className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4 inline-flex items-center justify-center">
-        {/* Render the Lucide Icon component passed as a prop, wrapped in Link */}
-        <Icon size={48} />
-      </Link>
-      <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">{title}</h3>
-      <p className="text-[#CCD2E3] text-lg leading-relaxed">{description}</p>
-      {/* Changed button to Link and added 'to' prop */}
-      <Link to={path} className="mt-6 px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold rounded-full hover:bg-opacity-90 transition duration-300 transform hover:scale-105 shadow-md">
-        Learn More
-      </Link>
-    </div>
+    <Link to={path} className="block"> {/* Changed to Link */}
+      <div
+        ref={cardRef} // Attach the local ref to this div
+        // Conditional classes: initial hidden state, then transition to visible
+        className={`
+          bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg
+          transition-all duration-700 ease-out transform
+          ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+          hover:scale-105 hover:shadow-2xl
+        `}
+        // The delay is now applied to the transition itself, for cumulative effect per card
+        style={{ transitionDelay: `${delay}ms` }}
+      >
+        <div className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4 inline-flex items-center justify-center">
+          {/* Render the Lucide Icon component passed as a prop */}
+          <Icon size={48} />
+        </div>
+        <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">{title}</h3>
+        <p className="text-[#CCD2E3] text-lg leading-relaxed">{description}</p>
+        {/* The 'Learn More' button is now part of the clickable card via the outer Link */}
+        <div className="mt-6 px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold rounded-full hover:bg-opacity-90 transition duration-300 transform hover:scale-105 shadow-md">
+          Learn More
+        </div>
+      </div>
+    </Link>
   );
 };
 
