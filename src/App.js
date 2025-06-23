@@ -398,6 +398,8 @@ const App = () => {
         <footer className="bg-[#0A1128] border-t border-[#C9B072] py-8 text-center text-[#CCD2E3] text-lg">
           <div className="container mx-auto px-6">
             <p>&copy; {new Date().getFullYear()} JAKOM. All rights reserved.</p>
+            {/* Added new paragraph for "Built by Obare Emmanuel" */}
+            <p className="mt-2 text-sm">Built by Obare Emmanuel</p>
             <div className="flex justify-center space-x-6 mt-4">
               {/* Added Email Icon */}
               <a href="mailto:emmanuelomondiobare@gmail.com" className="hover:text-[#C9B072] transition duration-300" aria-label="Email Us">
