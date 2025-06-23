@@ -1,6 +1,6 @@
 {
   "name": "jakom-website",
-  "version": "5.0.1",
+  "version": "0.1.0",
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
