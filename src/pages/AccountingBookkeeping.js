@@ -1,40 +1,43 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { FileSpreadsheet, Briefcase, ReceiptText, Calculator, DollarSign, BarChart2, TrendingUp, Handshake } from 'lucide-react'; // Added more icons for detailed services
+import { FileSpreadsheet, Briefcase, ReceiptText, Calculator, DollarSign, BarChart2, TrendingUp, Handshake, Users } from 'lucide-react';
 
 const AccountingBookkeeping = () => {
   const pageSectionsRef = useRef([]);
-  const handlePageSectionIntersect = useCallback((entries) => {
+
+  const collectRefs = useCallback((el) => {
+    if (el && !pageSectionsRef.current.includes(el)) {
+      pageSectionsRef.current.push(el);
+    }
+  }, []);
+
+  const handlePageSectionIntersect = useCallback((entries, observer) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add('fade-in-up-active');
         entry.target.classList.remove('opacity-0', 'translate-y-10');
-        if (entry.target.intersectionObserver) {
-          entry.target.intersectionObserver.unobserve(entry.target);
-        }
+        observer.unobserve(entry.target);
       }
     });
   }, []);
 
   useEffect(() => {
-    const currentPageSections = pageSectionsRef.current;
     const observer = new IntersectionObserver(handlePageSectionIntersect, {
       root: null,
       rootMargin: '0px',
       threshold: 0.2
     });
 
-    currentPageSections.forEach(section => {
+    pageSectionsRef.current.forEach(section => {
       if (section) {
         observer.observe(section);
-        section.intersectionObserver = observer;
       }
     });
 
     return () => {
-      currentPageSections.forEach(section => {
-        if (section && section.intersectionObserver) {
-          section.intersectionObserver.unobserve(section);
+      pageSectionsRef.current.forEach(section => {
+        if (section) {
+          observer.unobserve(section);
         }
       });
       observer.disconnect();
@@ -45,194 +48,92 @@ const AccountingBookkeeping = () => {
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
       <h1
         className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6 opacity-0 translate-y-10 fade-in-up"
-        ref={el => pageSectionsRef.current.push(el)}
+        ref={collectRefs}
+        style={{ '--animation-delay': '0s' }}
       >
         Comprehensive Accounting & Bookkeeping Solutions
       </h1>
       <p
         className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10 opacity-0 translate-y-10 fade-in-up"
-        ref={el => pageSectionsRef.current.push(el)}
-        style={{ animationDelay: '0.2s' }}
+        ref={collectRefs}
+        style={{ '--animation-delay': '0.2s' }}
       >
-        At JAKOM, we offer meticulous accounting and bookkeeping services designed to keep your finances in perfect order. From small businesses to growing enterprises, our tailored solutions provide the clarity, compliance, and strategic insights you need to thrive.
+        At JAKOM, we offer meticulous accounting and bookkeeping services designed to keep your finances in perfect order...
       </p>
 
-      {/* Core Services Section */}
       <section className="py-12 w-full max-w-6xl">
         <h2
           className="text-4xl md:text-5xl font-extrabold text-center text-[#F8F8F8] mb-12 opacity-0 translate-y-10 fade-in-up"
-          ref={el => pageSectionsRef.current.push(el)}
-          style={{ animationDelay: '0.4s' }}
+          ref={collectRefs}
+          style={{ '--animation-delay': '0.4s' }}
         >
           Our Core Accounting Services
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Service 1: Daily Transaction Recording */}
-          <div
-            className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '0.6s' }}
-          >
-            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
-              <ReceiptText size={48} />
+          {[
+            { Icon: ReceiptText, title: "Daily Transaction Recording", delay: "0.6s", text: "Accurate and timely recording..." },
+            { Icon: DollarSign, title: "Bank & Credit Card Reconciliation", delay: "0.8s", text: "Matching your bank and credit..." },
+            { Icon: Handshake, title: "Accounts Management", delay: "1.0s", text: "Efficiently manage your invoices..." },
+            { Icon: BarChart2, title: "Custom Financial Reporting", delay: "1.2s", text: "Generate insightful reports..." },
+            { Icon: Users, title: "Payroll Processing", delay: "1.4s", text: "Accurate and compliant payroll..." },
+            { Icon: TrendingUp, title: "Tax Preparation Support", delay: "1.6s", text: "Assistance with gathering..." },
+          ].map(({ Icon, title, delay, text }, idx) => (
+            <div
+              key={idx}
+              className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
+              ref={collectRefs}
+              style={{ '--animation-delay': delay }}
+            >
+              <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
+                <Icon size={48} />
+              </div>
+              <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">{title}</h3>
+              <p className="text-[#CCD2E3] text-lg leading-relaxed">{text}</p>
             </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Daily Transaction Recording</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Accurate and timely recording of all financial transactions to maintain up-to-date ledgers and journals.
-            </p>
-          </div>
-
-          {/* Service 2: Bank Reconciliation */}
-          <div
-            className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '0.8s' }}
-          >
-            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
-              <DollarSign size={48} />
-            </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Bank & Credit Card Reconciliation</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Matching your bank and credit card statements to your internal records, ensuring accuracy and detecting discrepancies.
-            </p>
-          </div>
-
-          {/* Service 3: Accounts Payable & Receivable Management */}
-          <div
-            className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '1.0s' }}
-          >
-            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
-              <Handshake size={48} />
-            </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Accounts Management</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Efficiently manage your invoices, payments, and receivables to optimize cash flow and maintain healthy vendor/client relationships.
-            </p>
-          </div>
-
-          {/* Service 4: Financial Reporting */}
-          <div
-            className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '1.2s' }}
-          >
-            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
-              <BarChart2 size={48} />
-            </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Custom Financial Reporting</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Generate insightful reports (Income Statements, Balance Sheets, Cash Flow) for clear financial performance visibility.
-            </p>
-          </div>
-
-          {/* Service 5: Payroll Processing */}
-          <div
-            className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '1.4s' }}
-          >
-            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
-              <Users size={48} /> {/* Using Users icon for Payroll */}
-            </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Payroll Processing</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Accurate and compliant payroll services, including salary calculations, tax withholdings, and pay stub generation.
-            </p>
-          </div>
-
-          {/* Service 6: Tax Preparation Support */}
-          <div
-            className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '1.6s' }}
-          >
-            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
-              <TrendingUp size={48} /> {/* Using TrendingUp for Tax */}
-            </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Tax Preparation Support</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Assistance with gathering and organizing financial data, ensuring readiness for tax filings.
-            </p>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* Essential Accounting Tools Section (from your original code) */}
       <section className="py-12 w-full max-w-6xl">
         <h2
           className="text-4xl md:text-5xl font-extrabold text-center text-[#F8F8F8] mb-12 opacity-0 translate-y-10 fade-in-up"
-          ref={el => pageSectionsRef.current.push(el)}
-          style={{ animationDelay: '1.8s' }}
+          ref={collectRefs}
+          style={{ '--animation-delay': '1.8s' }}
         >
           Essential Accounting Tools We Utilize
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Tool 1: Spreadsheet Software */}
-          <div
-            className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '2.0s' }}
-          >
-            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
-              <FileSpreadsheet size={48} />
-            </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Spreadsheet Software</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Leveraging powerful tools like Excel and Google Sheets for detailed financial analysis, budgeting, and custom reporting.
-            </p>
-          </div>
-
-          {/* Tool 2: Cloud Accounting Platforms */}
-          <div
-            className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '2.2s' }}
-          >
-            <div className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4">
-              <Briefcase size={48} />
-            </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Cloud Accounting Platforms</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Proficient in industry-leading software like QuickBooks Online and Xero for seamless financial management and collaboration.
-            </p>
-          </div>
-
-          {/* Tool 3: Expense Tracking & Payroll Systems */}
-          <div
-            className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '2.4s' }}
-          >
-            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
-              <ReceiptText size={48} />
-            </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Expense & Payroll Management</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Streamlining your expense reports and payroll processing with integrated and efficient systems.
-            </p>
-          </div>
-
-            {/* Tool 4: Financial Calculators / Analysis Tools (Optional, demonstrating more tools) */}
+          {[
+            { Icon: FileSpreadsheet, title: "Spreadsheet Software", delay: "2.0s", bg: "#4CAF50" },
+            { Icon: Briefcase, title: "Cloud Accounting Platforms", delay: "2.2s", bg: "#C9B072" },
+            { Icon: ReceiptText, title: "Expense & Payroll Management", delay: "2.4s", bg: "#4CAF50" },
+            { Icon: Calculator, title: "Financial Planning Tools", delay: "2.6s", bg: "#C9B072" },
+          ].map(({ Icon, title, delay, bg }, idx) => (
             <div
-            className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-            ref={el => pageSectionsRef.current.push(el)}
-            style={{ animationDelay: '2.6s' }}
-          >
-            <div className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4">
-              <Calculator size={48} />
+              key={idx}
+              className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
+              ref={collectRefs}
+              style={{ '--animation-delay': delay }}
+            >
+              <div className="p-4" style={{ backgroundColor: bg, color: '#0A1128', borderRadius: '9999px', marginBottom: '1rem' }}>
+                <Icon size={48} />
+              </div>
+              <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">{title}</h3>
+              <p className="text-[#CCD2E3] text-lg leading-relaxed">
+                {/* Sample filler text for clarity */}
+                Efficient and modern tools tailored for smarter financial workflows.
+              </p>
             </div>
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Financial Planning Tools</h3>
-            <p className="text-[#CCD2E3] text-lg leading-relaxed">
-              Utilizing specialized calculators and analysis tools for forecasting, tax planning, and investment insights.
-            </p>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* Back button */}
-      <Link to="/" className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-fade-in-up" style={{ animationDelay: '2.8s' }}>
+      <Link
+        to="/"
+        className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 fade-in-up opacity-0 translate-y-10"
+        ref={collectRefs}
+        style={{ '--animation-delay': '2.8s' }}
+      >
         Back to Home
       </Link>
     </div>
