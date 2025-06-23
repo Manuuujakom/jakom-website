@@ -8,17 +8,19 @@ import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, 
 // --- Import your actual page components from the src/pages directory ---
 // These imports are crucial to ensure App.js renders the content from those specific files.
 // Ensure each of these files (e.g., src/pages/GraphicsDesign.js) exports its component as 'default'.
-import GraphicsDesignPage from './pages/GraphicsDesign'; // Renamed to avoid conflict with local const
-import DataAnalysisPage from './pages/DataAnalysis';     // Renamed for clarity
-import AccountingBookkeepingPage from './pages/AccountingBookkeeping'; // Renamed for clarity
-import VirtualAssistancePage from './pages/VirtualAssistance'; // Renamed for clarity
-import KidsHubPage from './pages/KidsHub';               // Renamed for clarity
-import AboutUsPage from './pages/AboutUs';               // Renamed for clarity
-import ContactUsPage from './pages/ContactUs';           // The new ContactUs component
+// Added '.js' extension to resolve module not found errors.
+import GraphicsDesignPage from './pages/GraphicsDesign.js';
+import DataAnalysisPage from './pages/DataAnalysis.js';
+import AccountingBookkeepingPage from './pages/AccountingBookkeeping.js';
+import VirtualAssistancePage from './pages/VirtualAssusal.js';
+import KidsHubPage from './pages/KidsHub.js';
+import AboutUsPage from './pages/AboutUs.js';
+import ContactUsPage from './pages/ContactUs.js';
 
 // Import the reusable PlaceholderPage component
 // Adjust the path based on where you decide to place PlaceholderPage.js (e.g., in src/components/)
-import PlaceholderPage from './components/PlaceholderPage';
+// Assuming PlaceholderPage.js exists in the components directory.
+import PlaceholderPage from './components/PlaceholderPage.js';
 
 
 // Custom functional component for a Service Card
@@ -53,7 +55,7 @@ const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
     // Cleanup function: disconnect the observer when the component unmounts
     return () => {
       if (cardRef.current) {
-        observer.unobserve(cardRef.current);
+        observer.unobserve(card.current);
       }
     };
   }, []); // Empty dependency array means this effect runs once on mount
