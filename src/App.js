@@ -74,7 +74,7 @@ const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
         // The delay is now applied to the transition itself, for cumulative effect per card
         style={{ transitionDelay: `${delay}ms` }}
       >
-        <div className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4 inline-flex items-center justify-center">
+        <div className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4 inline-flex items-center justify-content-center">
           {/* Render the Lucide Icon component passed as a prop */}
           <Icon size={48} />
         </div>
@@ -99,11 +99,13 @@ const App = () => {
   };
 
   const appSectionsRef = useRef([]); // A new ref for general app sections
+
   const handleAppSectionIntersect = useCallback((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add('fade-in-up-active');
-        entry.target.classList.remove('opacity-0', 'translate-y-10');
+        // No need to remove opacity-0 and translate-y-10 explicitly here
+        // as 'fade-in-up-active' directly overrides it with opacity: 1 and transform: translateY(0)
         if (entry.target.intersectionObserver) {
             entry.target.intersectionObserver.unobserve(entry.target);
         }
@@ -112,16 +114,17 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const currentAppSections = appSectionsRef.current;
+    const currentAppSections = appSectionsRef.current.filter(el => el != null); // Filter out nulls
     const observer = new IntersectionObserver(handleAppSectionIntersect, {
       root: null,
       rootMargin: '0px',
-      threshold: 0.2
+      threshold: 0.1 // Lowered threshold slightly to ensure earlier detection
     });
 
     currentAppSections.forEach(section => {
       if (section) {
         observer.observe(section);
+        // Store observer on the element to unobserve specifically during cleanup
         section.intersectionObserver = observer;
       }
     });
@@ -132,7 +135,7 @@ const App = () => {
             section.intersectionObserver.unobserve(section);
         }
       });
-      observer.disconnect();
+      observer.disconnect(); // Disconnect the observer on unmount
     };
   }, [handleAppSectionIntersect]);
 
@@ -155,8 +158,15 @@ const App = () => {
           .hero-text-animate { animation: textFadeIn 2s ease-out forwards; opacity: 0; transform: translateY(20px); }
           @keyframes textFadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
           /* Updated fade-in-up for generic sections */
-          .fade-in-up { transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
-          .fade-in-up-active { opacity: 1; transform: translateY(0); }
+          .fade-in-up { 
+            opacity: 0; 
+            transform: translateY(10px); /* Initial hidden state */
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out; 
+          }
+          .fade-in-up-active { 
+            opacity: 1; 
+            transform: translateY(0); 
+          }
           .shimmer-text { position: relative; display: inline-block; overflow: hidden; }
           .shimmer-text::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shimmer 3s infinite; }
           @keyframes shimmer { 0% { left: -100%; } 50% { left: 100%; } 100% { left: -100%; } }
@@ -239,7 +249,7 @@ const App = () => {
               </section>
 
               <section className="py-20 bg-[#0A1128] container mx-auto px-6">
-                  <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 fade-in-up" ref={el => appSectionsRef.current.push(el)}>
+                  <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 fade-in-up" ref={el => appSectionsRef.current[0] = el}> {/* Use index for ref */}
                       Our Integrated Services
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -253,10 +263,10 @@ const App = () => {
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
                   <div className="flex flex-col md:flex-row items-center gap-12">
-                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 flex justify-center opacity-0 translate-y-10 fade-in-up">
+                      <div ref={el => appSectionsRef.current[1] = el} className="md:w-1/2 flex justify-center opacity-0 translate-y-10 fade-in-up"> {/* Use index for ref */}
                           <img src="https://placehold.co/500x350/0A1128/4CAF50?text=Kids+Hub+Fun" alt="Kids Hub" className="rounded-xl shadow-2xl object-cover" />
                       </div>
-                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 text-center md:text-left opacity-0 translate-y-10 fade-in-up" style={{ animationDelay: '200ms' }}>
+                      <div ref={el => appSectionsRef.current[2] = el} className="md:w-1/2 text-center md:text-left opacity-0 translate-y-10 fade-in-up" style={{ animationDelay: '200ms' }}> {/* Use index for ref */}
                           <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6">
                               Empowering the Next Generation: <span className="text-[#4CAF50]">Kids Hub</span>
                           </h2>
@@ -273,10 +283,10 @@ const App = () => {
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
                   <div className="max-w-3xl mx-auto text-center">
-                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}>
+                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current[3] = el}> {/* Use index for ref */}
                           About JAKOM
                       </h2>
-                      <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}>
+                      <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8 fade-in-up" ref={el => appSectionsRef.current[4] = el} style={{ animationDelay: '100ms' }}> {/* Use index for ref */}
                           JAKOM is more than just a service provider; we are your dedicated partner in navigating the complexities of modern business. Our mission is to simplify operations, enhance efficiency, and foster growth for enterprises of all sizes through innovative tech solutions and unparalleled expertise. We pride ourselves on delivering integrated services that truly make a difference.
                       </p>
                       {/* This button on the home page specifically links to the About Us page */}
@@ -287,10 +297,10 @@ const App = () => {
               </section>
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] text-center px-6">
-                  <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}>
+                  <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current[5] = el}> {/* Use index for ref */}
                       Ready to Elevate Your Business?
                   </h2>
-                  <p className="text-xl text-[#CCD2E3] mb-10 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}>
+                  <p className="text-xl text-[#CCD2E3] mb-10 fade-in-up" ref={el => appSectionsRef.current[6] = el} style={{ animationDelay: '100ms' }}> {/* Use index for ref */}
                       Let's discuss how JAKOM's comprehensive solutions can empower your success.
                   </p>
                   {/* This button likely leads to a contact form/page */}
