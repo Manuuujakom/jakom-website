@@ -21,7 +21,7 @@ const DataAnalysis = () => <PlaceholderPage title="Data Analysis" />;
 const AccountingBookkeeping = () => <PlaceholderPage title="Accounting & Bookkeeping" />;
 const VirtualAssistance = () => <PlaceholderPage title="Virtual Assistance" />;
 const KidsHub = () => <PlaceholderPage title="Kids Hub" />;
-const AboutUs = () => <PlaceholderPage title="About Us" />;
+const AboutUs = () => <PlaceholderPage title="AboutUs" />;
 
 // Custom functional component for a Service Card
 // This component now manages its own visibility animation using IntersectionObserver
@@ -98,56 +98,71 @@ const App = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const appSectionsRef = useRef([]); // A new ref for general app sections
+  // Use a Set to store references for general app sections.
+  // A Set automatically handles unique elements, simplifying addition and removal.
+  const observedSections = useRef(new Set());
+
+  // Callback ref function to add/remove elements from the Set
+  const setSectionRef = useCallback((node) => {
+    if (node) {
+      observedSections.current.add(node);
+    } else {
+      // This 'else' part is for cleanup when a component unmounts.
+      // It helps prevent observing stale nodes, though less critical
+      // for static content on a single-page app's main route.
+      // For this particular setup, with a single observer managing multiple refs,
+      // the `useEffect` cleanup (disconnecting the observer) is primary.
+    }
+  }, []); // No dependencies, so this function is stable across renders
 
   const handleAppSectionIntersect = useCallback((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         entry.target.classList.add('fade-in-up-active');
-        // No need to remove opacity-0 and translate-y-10 explicitly here
-        // as 'fade-in-up-active' directly overrides it with opacity: 1 and transform: translateY(0)
-        if (entry.target.intersectionObserver) {
-            entry.target.intersectionObserver.unobserve(entry.target);
+        // Unobserve the element once it has animated to prevent re-triggering
+        // We stored the observer instance on the element when observing.
+        if (entry.target.currentObserver) {
+          entry.target.currentObserver.unobserve(entry.target);
         }
       }
     });
-  }, []);
+  }, []); // No dependencies, so this callback is stable
 
   useEffect(() => {
-    const currentAppSections = appSectionsRef.current.filter(el => el != null); // Filter out nulls
     const observer = new IntersectionObserver(handleAppSectionIntersect, {
-      root: null,
+      root: null, // Observe against the viewport
       rootMargin: '0px',
       threshold: 0.1 // Lowered threshold slightly to ensure earlier detection
     });
 
-    currentAppSections.forEach(section => {
+    // Observe all elements currently in the Set
+    observedSections.current.forEach(section => {
       if (section) {
         observer.observe(section);
-        // Store observer on the element to unobserve specifically during cleanup
-        section.intersectionObserver = observer;
+        // Store the observer instance on the DOM element itself.
+        // This allows us to specifically unobserve *that* element later if needed.
+        section.currentObserver = observer;
       }
     });
 
+    // Cleanup function for the useEffect hook:
     return () => {
-      currentAppSections.forEach(section => {
-        if (section && section.intersectionObserver) {
-            section.intersectionObserver.unobserve(section);
+      // Before unmounting, unobserve all elements that were being observed by THIS observer instance.
+      observedSections.current.forEach(section => {
+        if (section && section.currentObserver) { // Check if the element was indeed observed by this specific observer
+          section.currentObserver.unobserve(section);
         }
       });
-      observer.disconnect(); // Disconnect the observer on unmount
+      observer.disconnect(); // Disconnect the observer completely
+      observedSections.current.clear(); // Clear the Set to prevent stale references
     };
-  }, [handleAppSectionIntersect]);
+  }, [handleAppSectionIntersect]); // Re-run effect if handleAppSectionIntersect changes (though it's useCallback, so it won't)
 
 
   return (
-    // Outermost div for the entire application, applying base styles
     <Router> {/* Wrap the entire application in BrowserRouter */}
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] font-sans overflow-x-hidden">
 
-        {/* Inline style block for custom CSS animations.
-            These styles are embedded directly for simplicity in this single file context.
-            For larger projects, these would typically be in a dedicated CSS file. */}
         <style>
           {`
           html, body { height: 100%; }
@@ -157,15 +172,16 @@ const App = () => {
           @keyframes logoReveal { 0% { opacity: 0; transform: scale(0.7) translateY(20px); } 50% { opacity: 1; transform: scale(1.05) translateY(-5px); } 100% { opacity: 1; transform: scale(1); } }
           .hero-text-animate { animation: textFadeIn 2s ease-out forwards; opacity: 0; transform: translateY(20px); }
           @keyframes textFadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
-          /* Updated fade-in-up for generic sections */
-          .fade-in-up { 
-            opacity: 0; 
-            transform: translateY(10px); /* Initial hidden state */
-            transition: opacity 0.8s ease-out, transform 0.8s ease-out; 
+          /* Optimized fade-in-up for generic sections */
+          /* Ensures initial hidden state for elements that will be observed */
+          .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px); /* Initial hidden state */
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
           }
-          .fade-in-up-active { 
-            opacity: 1; 
-            transform: translateY(0); 
+          .fade-in-up-active { /* State when element is visible */
+            opacity: 1;
+            transform: translateY(0);
           }
           .shimmer-text { position: relative; display: inline-block; overflow: hidden; }
           .shimmer-text::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shimmer 3s infinite; }
@@ -249,11 +265,12 @@ const App = () => {
               </section>
 
               <section className="py-20 bg-[#0A1128] container mx-auto px-6">
-                  <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 fade-in-up" ref={el => appSectionsRef.current[0] = el}> {/* Use index for ref */}
+                  {/* Apply fade-in-up class and the callback ref */}
+                  <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 fade-in-up" ref={setSectionRef}>
                       Our Integrated Services
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-                      {/* Passed 'path' prop to ServiceCard */}
+                      {/* ServiceCards have their own internal Intersection Observers */}
                       <ServiceCard icon={Paintbrush} title="Graphics & Design" description="Stunning visuals that capture attention and communicate your brand's unique story effectively." delay={0} path="/graphics-design" />
                       <ServiceCard icon={BarChart2} title="Data Analysis" description="Unlock actionable insights from your data to drive informed decisions and strategic growth." delay={100} path="/data-analysis" />
                       <ServiceCard icon={DollarSign} title="Accounting & Bookkeeping" description="Expert financial management to ensure accuracy, compliance, and peace of mind." delay={200} path="/accounting-bookkeeping" />
@@ -263,10 +280,12 @@ const App = () => {
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
                   <div className="flex flex-col md:flex-row items-center gap-12">
-                      <div ref={el => appSectionsRef.current[1] = el} className="md:w-1/2 flex justify-center opacity-0 translate-y-10 fade-in-up"> {/* Use index for ref */}
+                      {/* Apply fade-in-up class and the callback ref */}
+                      <div className="md:w-1/2 flex justify-center fade-in-up" ref={setSectionRef}>
                           <img src="https://placehold.co/500x350/0A1128/4CAF50?text=Kids+Hub+Fun" alt="Kids Hub" className="rounded-xl shadow-2xl object-cover" />
                       </div>
-                      <div ref={el => appSectionsRef.current[2] = el} className="md:w-1/2 text-center md:text-left opacity-0 translate-y-10 fade-in-up" style={{ animationDelay: '200ms' }}> {/* Use index for ref */}
+                      {/* Apply fade-in-up class and the callback ref */}
+                      <div className="md:w-1/2 text-center md:text-left fade-in-up" ref={setSectionRef}>
                           <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6">
                               Empowering the Next Generation: <span className="text-[#4CAF50]">Kids Hub</span>
                           </h2>
@@ -283,10 +302,12 @@ const App = () => {
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
                   <div className="max-w-3xl mx-auto text-center">
-                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current[3] = el}> {/* Use index for ref */}
+                      {/* Apply fade-in-up class and the callback ref */}
+                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={setSectionRef}>
                           About JAKOM
                       </h2>
-                      <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8 fade-in-up" ref={el => appSectionsRef.current[4] = el} style={{ animationDelay: '100ms' }}> {/* Use index for ref */}
+                      {/* Apply fade-in-up class and the callback ref */}
+                      <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8 fade-in-up" ref={setSectionRef}>
                           JAKOM is more than just a service provider; we are your dedicated partner in navigating the complexities of modern business. Our mission is to simplify operations, enhance efficiency, and foster growth for enterprises of all sizes through innovative tech solutions and unparalleled expertise. We pride ourselves on delivering integrated services that truly make a difference.
                       </p>
                       {/* This button on the home page specifically links to the About Us page */}
@@ -297,14 +318,16 @@ const App = () => {
               </section>
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] text-center px-6">
-                  <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current[5] = el}> {/* Use index for ref */}
+                  {/* Apply fade-in-up class and the callback ref */}
+                  <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={setSectionRef}>
                       Ready to Elevate Your Business?
                   </h2>
-                  <p className="text-xl text-[#CCD2E3] mb-10 fade-in-up" ref={el => appSectionsRef.current[6] = el} style={{ animationDelay: '100ms' }}> {/* Use index for ref */}
+                  {/* Apply fade-in-up class and the callback ref */}
+                  <p className="text-xl text-[#CCD2E3] mb-10 fade-in-up" ref={setSectionRef}>
                       Let's discuss how JAKOM's comprehensive solutions can empower your success.
                   </p>
-                  {/* This button likely leads to a contact form/page */}
-                  <Link to="/contact-us" className="px-12 py-4 bg-[#C9B072] text-[#0A1128] font-bold text-xl rounded-full shadow-2xl transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-pulse fade-in-up inline-flex items-center justify-content-center" style={{ animationDelay: '200ms' }}>
+                  {/* Apply fade-in-up class and the callback ref */}
+                  <Link to="/contact-us" className="px-12 py-4 bg-[#C9B072] text-[#0A1128] font-bold text-xl rounded-full shadow-2xl transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-pulse fade-in-up inline-flex items-center justify-content-center" ref={setSectionRef}>
                       Contact Us Now
                   </Link>
               </section>
