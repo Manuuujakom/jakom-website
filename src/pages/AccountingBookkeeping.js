@@ -22,6 +22,61 @@ const VirtualAssistance = () => <PlaceholderPage title="Virtual Assistance" />;
 const KidsHub = () => <PlaceholderPage title="Kids Hub" />;
 const AboutUs = () => <PlaceholderPage title="About Us" />;
 
+// ServiceCard Component (moved here for better organization if not already global)
+const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
+  const cardRef = useRef(null);
+  const handleIntersect = useCallback((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('fade-in-up-active');
+        entry.target.classList.remove('opacity-0', 'translate-y-10');
+        if (entry.target.intersectionObserver) {
+          entry.target.intersectionObserver.unobserve(entry.target);
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleIntersect, {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.2
+    });
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+      cardRef.current.intersectionObserver = observer; // Store observer on element
+    }
+
+    return () => {
+      if (cardRef.current && cardRef.current.intersectionObserver) {
+        cardRef.current.intersectionObserver.unobserve(cardRef.current);
+      }
+      observer.disconnect();
+    };
+  }, [handleIntersect]);
+
+  return (
+    <Link to={path} className="block"> {/* Changed to Link */}
+      <div
+        ref={cardRef}
+        className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
+        style={{ animationDelay: `${delay}ms` }}
+      >
+        <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
+          <Icon size={48} />
+        </div>
+        <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">{title}</h3>
+        <p className="text-[#CCD2E3] text-lg leading-relaxed">
+          {description}
+        </p>
+      </div>
+    </Link>
+  );
+};
+
+
 // New AccountingBookkeeping Component with Tools Section
 const AccountingBookkeeping = () => {
   // Local ref for animation within this specific page
@@ -135,8 +190,8 @@ const AccountingBookkeeping = () => {
             </p>
           </div>
 
-           {/* Tool 4: Financial Calculators / Analysis Tools (Optional, demonstrating more tools) */}
-           <div
+            {/* Tool 4: Financial Calculators / Analysis Tools (Optional, demonstrating more tools) */}
+            <div
             className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
             ref={el => pageSectionsRef.current.push(el)}
             style={{ animationDelay: '1.2s' }}
@@ -221,7 +276,7 @@ const App = () => {
         <style>
           {`
           html, body { height: 100%; }
-          body { font-family: 'Inter', sans-serif; margin: 0; background-color: #0A1128; color: #F8F8F8; overflow-x: hidden; }
+          body { font-family: 'Inter', sans-serif; margin: 0; background-color: #0A1128; color: #F8F8F8; /* Removed overflow-x: hidden from here */ }
           .jo-logo-container { position: relative; width: 500px; max-width: 90%; height: auto; aspect-ratio: 500 / 300; overflow: hidden; margin-left: auto; margin-right: auto; }
           .jo-logo { animation: logoReveal 3s ease-out forwards; transform-origin: center; opacity: 0; width: 100%; height: 100%; object-fit: contain; }
           @keyframes logoReveal { 0% { opacity: 0; transform: scale(0.7) translateY(20px); } 50% { opacity: 1; transform: scale(1.05) translateY(-5px); } 100% { opacity: 1; transform: scale(1); } }
