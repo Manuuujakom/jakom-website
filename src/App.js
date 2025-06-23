@@ -23,83 +23,54 @@ const VirtualAssistance = () => <PlaceholderPage title="Virtual Assistance" />;
 const KidsHub = () => <PlaceholderPage title="Kids Hub" />;
 const AboutUs = () => <PlaceholderPage title="About Us" />;
 
-// Main App Component
-const App = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const sectionsRef = useRef([]); // Ref to observe sections for scroll animations
+// Custom functional component for a Service Card
+// This component now manages its own visibility animation using IntersectionObserver
+const ServiceCard = ({ icon: Icon, title, description, delay }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef(null); // Ref for this specific card
 
-  // Function to toggle mobile navigation menu state
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  // Callback memoizes the handleIntersect function to prevent unnecessary re-creations,
-  // which is good for performance, especially with useEffect dependencies.
-  const handleIntersect = useCallback((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        // Add active class for animation and remove initial hidden states
-        entry.target.classList.add('fade-in-up-active');
-        entry.target.classList.remove('opacity-0', 'translate-y-10');
-        // Stop observing once the element has animated to prevent re-triggering.
-        // This makes the animation a one-time event when the element enters the viewport.
-        if (entry.target.intersectionObserver) {
-            entry.target.intersectionObserver.unobserve(entry.target);
-        }
-      }
-    });
-  }, []); // Empty dependency array means this function is created once
-
-  // useEffect for setting up and cleaning up the IntersectionObserver
   useEffect(() => {
-    // FIX: Capture the current array of sections from the ref here
-    // This ensures the cleanup function uses the same array reference that was active
-    // when the effect was set up, preventing potential null issues or stale references.
-    const currentSections = sectionsRef.current;
-
-    // Create a new IntersectionObserver instance
-    const observer = new IntersectionObserver(handleIntersect, {
-      root: null, // The viewport is used as the root
-      rootMargin: '0px', // No margin around the root
-      threshold: 0.2 // Trigger when 20% of the item is visible
-    });
-
-    // Observe all elements that were pushed into currentSections
-    currentSections.forEach(section => {
-      if (section) {
-        observer.observe(section);
-        // Attach the observer instance to the element for easier unobserving later
-        section.intersectionObserver = observer;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // If the card is intersecting (entering the viewport)
+          if (entry.isIntersecting) {
+            setIsVisible(true); // Set state to true to trigger animation
+            observer.unobserve(entry.target); // Stop observing once it's visible
+          }
+        });
+      },
+      {
+        root: null, // Observe against the viewport
+        rootMargin: '0px',
+        threshold: 0.2, // Trigger when 20% of the item is visible
       }
-    });
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
 
     // Cleanup function: disconnect the observer when the component unmounts
-    // to prevent memory leaks and ensure optimal performance.
     return () => {
-      // Use the captured 'currentSections' in the cleanup
-      currentSections.forEach(section => {
-        if (section && section.intersectionObserver) {
-            section.intersectionObserver.unobserve(section);
-        }
-      });
-      observer.disconnect();
+      if (cardRef.current) {
+        observer.unobserve(cardRef.current);
+      }
     };
-  }, [handleIntersect]); // Re-run effect if handleIntersect changes (though it's stable due to useCallback)
+  }, []); // Empty dependency array means this effect runs once on mount
 
-  // Custom functional component for a Service Card
-  // Destructures props for cleaner usage.
-  const ServiceCard = ({ icon: Icon, title, description, delay }) => (
+  return (
     <div
-      // Attach a ref to the div for IntersectionObserver to observe
-      ref={el => {
-        if (el && !sectionsRef.current.includes(el)) { // Ensure no duplicates
-          sectionsRef.current.push(el);
-        }
-      }}
-      // Tailwind CSS classes for styling and initial animation state
-      className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
-      // Inline style for animation delay, converted to string with 'ms' unit
-      style={{ animationDelay: `${delay}ms` }}
+      ref={cardRef} // Attach the local ref to this div
+      // Conditional classes: initial hidden state, then transition to visible
+      className={`
+        bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg
+        transition-all duration-700 ease-out transform
+        ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
+        hover:scale-105 hover:shadow-2xl
+      `}
+      // The delay is now applied to the transition itself, for cumulative effect per card
+      style={{ transitionDelay: `${delay}ms` }}
     >
       <div className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4">
         {/* Render the Lucide Icon component passed as a prop */}
@@ -107,13 +78,64 @@ const App = () => {
       </div>
       <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">{title}</h3>
       <p className="text-[#CCD2E3] text-lg leading-relaxed">{description}</p>
-      {/* Keeping this as a generic button for now as it doesn't lead to a specific sub-page.
-          If you want these to link to individual service pages, we'd adjust this. */}
       <button className="mt-6 px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold rounded-full hover:bg-opacity-90 transition duration-300 transform hover:scale-105 shadow-md">
         Learn More
       </button>
     </div>
   );
+};
+
+// Main App Component
+const App = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Removed sectionsRef from App component as ServiceCard now manages its own visibility
+
+  // Function to toggle mobile navigation menu state
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  // Re-implemented a simple IntersectionObserver for other sections if needed,
+  // separate from ServiceCards. For simplicity, let's keep it if other sections also animate.
+  // We'll manage this separately, assuming other sections like "About JAKOM" also need this.
+  const appSectionsRef = useRef([]); // A new ref for general app sections
+  const handleAppSectionIntersect = useCallback((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('fade-in-up-active');
+        entry.target.classList.remove('opacity-0', 'translate-y-10');
+        if (entry.target.intersectionObserver) {
+            entry.target.intersectionObserver.unobserve(entry.target);
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const currentAppSections = appSectionsRef.current;
+    const observer = new IntersectionObserver(handleAppSectionIntersect, {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.2
+    });
+
+    currentAppSections.forEach(section => {
+      if (section) {
+        observer.observe(section);
+        section.intersectionObserver = observer;
+      }
+    });
+
+    return () => {
+      currentAppSections.forEach(section => {
+        if (section && section.intersectionObserver) {
+            section.intersectionObserver.unobserve(section);
+        }
+      });
+      observer.disconnect();
+    };
+  }, [handleAppSectionIntersect]);
+
 
   return (
     // Outermost div for the entire application, applying base styles
@@ -132,6 +154,7 @@ const App = () => {
           @keyframes logoReveal { 0% { opacity: 0; transform: scale(0.7) translateY(20px); } 50% { opacity: 1; transform: scale(1.05) translateY(-5px); } 100% { opacity: 1; transform: scale(1); } }
           .hero-text-animate { animation: textFadeIn 2s ease-out forwards; opacity: 0; transform: translateY(20px); }
           @keyframes textFadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+          /* Updated fade-in-up for generic sections */
           .fade-in-up { transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
           .fade-in-up-active { opacity: 1; transform: translateY(0); }
           .shimmer-text { position: relative; display: inline-block; overflow: hidden; }
@@ -216,7 +239,7 @@ const App = () => {
               </section>
 
               <section className="py-20 bg-[#0A1128] container mx-auto px-6">
-                  <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 fade-in-up" ref={el => sectionsRef.current.push(el)}>
+                  <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 fade-in-up" ref={el => appSectionsRef.current.push(el)}> {/* Use appSectionsRef */}
                       Our Integrated Services
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
@@ -229,10 +252,10 @@ const App = () => {
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
                   <div className="flex flex-col md:flex-row items-center gap-12">
-                      <div ref={el => sectionsRef.current.push(el)} className="md:w-1/2 flex justify-center opacity-0 translate-y-10 fade-in-up">
+                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 flex justify-center opacity-0 translate-y-10 fade-in-up"> {/* Use appSectionsRef */}
                           <img src="https://placehold.co/500x350/0A1128/4CAF50?text=Kids+Hub+Fun" alt="Kids Hub" className="rounded-xl shadow-2xl object-cover" />
                       </div>
-                      <div ref={el => sectionsRef.current.push(el)} className="md:w-1/2 text-center md:text-left opacity-0 translate-y-10 fade-in-up" style={{ animationDelay: '200ms' }}>
+                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 text-center md:text-left opacity-0 translate-y-10 fade-in-up" style={{ animationDelay: '200ms' }}> {/* Use appSectionsRef */}
                           <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6">
                               Empowering the Next Generation: <span className="text-[#4CAF50]">Kids Hub</span>
                           </h2>
@@ -249,10 +272,10 @@ const App = () => {
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
                   <div className="max-w-3xl mx-auto text-center">
-                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => sectionsRef.current.push(el)}>
+                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}> {/* Use appSectionsRef */}
                           About JAKOM
                       </h2>
-                      <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8 fade-in-up" ref={el => sectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}>
+                      <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}> {/* Use appSectionsRef */}
                           JAKOM is more than just a service provider; we are your dedicated partner in navigating the complexities of modern business. Our mission is to simplify operations, enhance efficiency, and foster growth for enterprises of all sizes through innovative tech solutions and unparalleled expertise. We pride ourselves on delivering integrated services that truly make a difference.
                       </p>
                       {/* This button on the home page specifically links to the About Us page */}
@@ -263,10 +286,10 @@ const App = () => {
               </section>
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] text-center px-6">
-                  <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => sectionsRef.current.push(el)}>
+                  <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}> {/* Use appSectionsRef */}
                       Ready to Elevate Your Business?
                   </h2>
-                  <p className="text-xl text-[#CCD2E3] mb-10 fade-in-up" ref={el => sectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}>
+                  <p className="text-xl text-[#CCD2E3] mb-10 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}> {/* Use appSectionsRef */}
                       Let's discuss how JAKOM's comprehensive solutions can empower your success.
                   </p>
                   {/* This button likely leads to a contact form/page */}
