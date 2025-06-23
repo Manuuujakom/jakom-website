@@ -1,14 +1,18 @@
+// src/App.js
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Import routing components: BrowserRouter (aliased as Router), Routes, and Route, Link
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, Home, Mail, Phone, MessageSquare, Smartphone } from 'lucide-react';
 
-// --- Placeholder Page Components ---
+// --- Placeholder Page Component (generic structure for new pages) ---
+// This component can be used when you create new pages in src/pages/
+// and want them to have a consistent "coming soon" or basic structure.
 const PlaceholderPage = ({ title }) => (
   <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
     <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6">{title}</h1>
     <p className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10">
-      Content for {title} will go here.
+      Content for {title} will go here. You can edit the actual page file to add content.
     </p>
     <Link to="/" className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
       Back to Home
@@ -16,12 +20,16 @@ const PlaceholderPage = ({ title }) => (
   </div>
 );
 
-const GraphicsDesign = () => <PlaceholderPage title="Graphics & Design" />;
-const DataAnalysis = () => <PlaceholderPage title="Data Analysis" />;
-const AccountingBookkeeping = () => <PlaceholderPage title="Accounting & Bookkeeping" />;
-const VirtualAssistance = () => <PlaceholderPage title="Virtual Assistance" />;
-const KidsHub = () => <PlaceholderPage title="Kids Hub" />;
-const AboutUs = () => <PlaceholderPage title="AboutUs" />;
+// --- Import your actual page components from the src/pages directory ---
+// IMPORTANT: Ensure these components are exported as 'default' from their respective files.
+import GraphicsDesign from './pages/GraphicsDesign'; // Assuming GraphicsDesign.js exists and exports default
+import DataAnalysis from './pages/DataAnalysis';     // Assuming DataAnalysis.js exists and exports default
+import AccountingBookkeeping from './pages/AccountingBookkeeping'; // Assuming AccountingBookkeeping.js exists and exports default
+import VirtualAssistance from './pages/VirtualAssistance'; // Assuming VirtualAssistance.js exists and exports default
+import KidsHub from './pages/KidsHub';               // Assuming KidsHub.js exists and exports default
+import AboutUs from './pages/AboutUs';               // Assuming AboutUs.js exists and exports default
+import ContactUs from './pages/ContactUs';           // Now importing the new ContactUs component
+
 
 // Custom functional component for a Service Card
 // This component now manages its own visibility animation using IntersectionObserver
@@ -303,7 +311,7 @@ const App = () => {
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
                   <div className="max-w-3xl mx-auto text-center">
                       {/* Apply fade-in-up class and the callback ref */}
-                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={setSectionRef}>
+                      <h2 className="text-5xl font-extrabold text-[#F8F2F2] mb-6 fade-in-up" ref={setSectionRef}>
                           About JAKOM
                       </h2>
                       {/* Apply fade-in-up class and the callback ref */}
@@ -334,64 +342,14 @@ const App = () => {
             </>
           } />
 
-          {/* Routes for other pages */}
+          {/* Routes for other pages (now correctly importing and rendering your actual page components) */}
           <Route path="/graphics-design" element={<GraphicsDesign />} />
           <Route path="/data-analysis" element={<DataAnalysis />} />
           <Route path="/accounting-bookkeeping" element={<AccountingBookkeeping />} />
           <Route path="/virtual-assistance" element={<VirtualAssistance />} />
           <Route path="/kids-hub" element={<KidsHub />} />
           <Route path="/about-us" element={<AboutUs />} />
-          {/* Updated Contact Us page with direct contact options */}
-          <Route path="/contact-us" element={
-            <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
-              <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6">Get in Touch with JAKOM</h1>
-              <p className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10">
-                We're here to help you elevate your business. Choose your preferred method to connect:
-              </p>
-              <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-6 mt-8">
-                {/* Email Link */}
-                <a
-                  href="mailto:emmanuelomondiobare@gmail.com?subject=Inquiry from JAKOM Website"
-                  className="px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 flex items-center space-x-2 w-full sm:w-auto"
-                >
-                  <Mail size={24} />
-                  <span>Email Us</span>
-                </a>
-
-                {/* Phone Call Link */}
-                <a
-                  href="tel:+254794255000"
-                  className="px-6 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 flex items-center space-x-2 w-full sm:w-auto"
-                >
-                  <Phone size={24} />
-                  <span>Call Us</span>
-                </a>
-
-                {/* SMS Link */}
-                <a
-                  href="sms:+254794255000?body=Hello JAKOM, I have an inquiry from your website."
-                  className="px-6 py-3 bg-[#0A1128] border border-[#C9B072] text-[#F8F8F8] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:shadow-lg flex items-center space-x-2 w-full sm:w-auto"
-                >
-                  <MessageSquare size={24} />
-                  <span>Send SMS</span>
-                </a>
-
-                {/* WhatsApp Link */}
-                <a
-                  href="https://wa.me/254794255000?text=Hello%20JAKOM,%20I%20have%20an%20inquiry%20from%20your%20website."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 bg-[#25D366] text-white font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 flex items-center space-x-2 w-full sm:w-auto"
-                >
-                  <Smartphone size={24} />
-                  <span>WhatsApp Us</span>
-                </a>
-              </div>
-              <Link to="/" className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
-                Back to Home
-              </Link>
-            </div>
-          } />
+          <Route path="/contact-us" element={<ContactUs />} /> {/* Using the new ContactUs component */}
         </Routes>
 
         {/* Footer (remains outside of Routes as it's common to all pages) */}
