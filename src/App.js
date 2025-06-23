@@ -49,7 +49,7 @@ const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
     // Cleanup function: disconnect the observer when the component unmounts
     return () => {
       if (cardRef.current) {
-        observer.unobserve(cardRef.current);
+        observer.unobserve(card.current);
       }
     };
   }, []); // Empty dependency array means this effect runs once on mount
