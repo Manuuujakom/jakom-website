@@ -1,381 +1,461 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router'; // For navigation
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+// Import routing components: BrowserRouter (aliased as Router), Routes, and Route, Link
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, Home, Mail, Phone, MessageSquare, Smartphone, FileSpreadsheet, Briefcase, ReceiptText, Calculator } from 'lucide-react'; // Added icons for accounting tools
 
-// --- Calculator Component ---
-const Calculator = () => {
-    const [input, setInput] = useState('0'); // Current number displayed/being entered
-    const [currentOperand, setCurrentOperand] = useState(null); // Result of previous operation
-    const [previousOperand, setPreviousOperand] = useState(null); // First operand for calculation
-    const [operation, setOperation] = useState(null); // Current arithmetic operation
-    const [overwrite, setOverwrite] = useState(true); // Flag to overwrite input on new number entry
+// --- Placeholder Page Components ---
+const PlaceholderPage = ({ title }) => (
+  <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
+    <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6">{title}</h1>
+    <p className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10">
+      Content for {title} will go here.
+    </p>
+    <Link to="/" className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
+      Back to Home
+    </Link>
+  </div>
+);
 
-    // Clears all calculator state
-    const clear = () => {
-        setInput('0');
-        setCurrentOperand(null);
-        setPreviousOperand(null);
-        setOperation(null);
-        setOverwrite(true);
-    };
+const GraphicsDesign = () => <PlaceholderPage title="Graphics & Design" />;
+const DataAnalysis = () => <PlaceholderPage title="Data Analysis" />;
+const VirtualAssistance = () => <PlaceholderPage title="Virtual Assistance" />;
+const KidsHub = () => <PlaceholderPage title="Kids Hub" />;
+const AboutUs = () => <PlaceholderPage title="About Us" />;
 
-    // Deletes the last digit from the current input
-    const deleteLastDigit = () => {
-        setInput(prev => {
-            // If input is "Error", clear it
-            if (prev === 'Error') return '0';
-            // If only one digit, set to '0'
-            if (prev.length === 1) return '0';
-            // Otherwise, remove the last character
-            return prev.slice(0, -1);
-        });
-    };
-
-    // Appends a number or decimal point to the current input
-    const appendNumber = (number) => {
-        // If overwrite flag is true (e.g., after an operation or initial state)
-        if (overwrite) {
-            // If the number is a decimal point and input is currently '0', set input to '0.'
-            if (number === '.' && input === '0') {
-                setInput('0.');
-            } else {
-                setInput(String(number)); // Start new input
-            }
-            setOverwrite(false); // Disable overwrite
-        } else {
-            // Prevent multiple decimal points
-            if (number === '.' && input.includes('.')) return;
-            // Handle leading zero: if input is '0' and new number is not '.', replace '0'
-            setInput(prev => (prev === '0' && number !== '.') ? String(number) : prev + number);
-        }
-    };
-
-    // Sets the chosen arithmetic operation
-    const chooseOperation = (op) => {
-        // If no number has been entered yet, do nothing
-        if (input === '0' && previousOperand === null && currentOperand === null) return;
-
-        // If there's a previous operand, and we have a new input, compute the previous operation
-        if (previousOperand !== null && !overwrite) {
-            compute(); // Perform calculation for the previous operation before setting a new one
-        } else if (currentOperand !== null && previousOperand === null) {
-            // If a result from a previous calculation exists, use that as the new previousOperand
-            setPreviousOperand(currentOperand);
-        } else if (previousOperand === null) {
-            // If no previous operand, set the current input as the previous operand
-            setPreviousOperand(parseFloat(input));
-        }
-
-        setOperation(op); // Set the new operation
-        setOverwrite(true); // Prepare for new number input
-        setCurrentOperand(null); // Clear current operand after setting previousOperand
-    };
-
-    // Performs the calculation
-    const compute = () => {
-        const prev = previousOperand;
-        const current = parseFloat(input);
-
-        // If no valid previous operand or current number, return
-        if (isNaN(prev) && isNaN(current)) return;
-        if (operation === null) return; // No operation selected
-
-        let computation;
-        // Handle cases where previousOperand might be null but currentOperand has a value
-        const val1 = isNaN(prev) ? currentOperand : prev;
-
-        if (isNaN(val1) || isNaN(current)) return; // Still check after resolving val1
-
-        switch (operation) {
-            case '+': computation = val1 + current; break;
-            case '-': computation = val1 - current; break;
-            case '*': computation = val1 * current; break;
-            case '÷':
-            case '/': computation = current === 0 ? 'Error' : val1 / current; break;
-            default: return; // Should not happen
-        }
-
-        setInput(computation.toString()); // Display the result
-        setCurrentOperand(computation); // Store the result as the new currentOperand
-        setOperation(null); // Clear the operation
-        setPreviousOperand(null); // Clear the previous operand
-        setOverwrite(true); // Prepare for a new calculation
-    };
-
-    // Effect to clear calculator on initial mount (or dependency change, though none here)
-    useEffect(() => {
-        clear();
-    }, []);
-
-    return (
-        <div className="bg-[#1A1F36] border border-[#C9B072] rounded-xl p-6 shadow-2xl flex flex-col items-center w-full max-w-sm mx-auto">
-            <h2 className="text-3xl font-bold text-[#F8F8F8] mb-6">Financial Calculator</h2>
-            <div className="w-full bg-[#0A1128] border border-[#4CAF50] rounded-lg p-4 text-right mb-4 shadow-inner">
-                <div className="text-[#CCD2E3] text-lg break-words min-h-[1.5em]">
-                    {previousOperand !== null ? previousOperand : ''} {operation}
-                </div>
-                <div className="text-[#F8F8F8] text-4xl font-bold break-words overflow-x-auto">
-                    {input}
-                </div>
-            </div>
-            <div className="grid grid-cols-4 gap-2 w-full">
-                <button onClick={clear} className="col-span-2 bg-[#C9B072] text-[#0A1128] font-semibold py-3 rounded-lg shadow hover:bg-[#B79A5F] transition text-xl">AC</button>
-                <button onClick={deleteLastDigit} className="bg-[#C9B072] text-[#0A1128] font-semibold py-3 rounded-lg shadow hover:bg-[#B79A5F] transition text-xl">DEL</button>
-                <button onClick={() => chooseOperation('÷')} className="bg-[#4CAF50] text-[#F8F8F8] font-semibold py-3 rounded-lg shadow hover:bg-[#3D8F40] transition text-xl">÷</button>
-
-                {[7, 8, 9].map(num => (
-                    <button key={num} onClick={() => appendNumber(num)} className="bg-[#2A314B] text-[#F8F8F8] font-semibold py-3 rounded-lg shadow hover:bg-[#3C4460] transition text-xl">{num}</button>
-                ))}
-                <button onClick={() => chooseOperation('*')} className="bg-[#4CAF50] text-[#F8F8F8] font-semibold py-3 rounded-lg shadow hover:bg-[#3D8F40] transition text-xl">*</button>
-
-                {[4, 5, 6].map(num => (
-                    <button key={num} onClick={() => appendNumber(num)} className="bg-[#2A314B] text-[#F8F8F8] font-semibold py-3 rounded-lg shadow hover:bg-[#3C4460] transition text-xl">{num}</button>
-                ))}
-                <button onClick={() => chooseOperation('-')} className="bg-[#4CAF50] text-[#F8F8F8] font-semibold py-3 rounded-lg shadow hover:bg-[#3D8F40] transition text-xl">-</button>
-
-                {[1, 2, 3].map(num => (
-                    <button key={num} onClick={() => appendNumber(num)} className="bg-[#2A314B] text-[#F8F8F8] font-semibold py-3 rounded-lg shadow hover:bg-[#3C4460] transition text-xl">{num}</button>
-                ))}
-                <button onClick={() => chooseOperation('+')} className="bg-[#4CAF50] text-[#F8F8F8] font-semibold py-3 rounded-lg shadow hover:bg-[#3D8F40] transition text-xl">+</button>
-
-                <button onClick={() => appendNumber(0)} className="col-span-2 bg-[#2A314B] text-[#F8F8F8] font-semibold py-3 rounded-lg shadow hover:bg-[#3C4460] transition text-xl">0</button>
-                <button onClick={() => appendNumber('.')} className="bg-[#2A314B] text-[#F8F8F8] font-semibold py-3 rounded-lg shadow hover:bg-[#3C4460] transition text-xl">.</button>
-                <button onClick={compute} className="bg-[#C9B072] text-[#0A1128] font-semibold py-3 rounded-lg shadow hover:bg-[#B79A5F] transition text-xl">=</button>
-            </div>
-        </div>
-    );
-};
-
-// --- Currency Converter Component ---
-const CurrencyConverter = () => {
-    const [amount, setAmount] = useState(1);
-    const [fromCurrency, setFromCurrency] = useState('USD');
-    const [toCurrency, setToCurrency] = useState('KES'); // Default to Kenya Shilling
-    const [exchangeRate, setExchangeRate] = useState(null);
-    const [convertedAmount, setConvertedAmount] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-
-    // List of common currencies, including KES (Kenya Shilling)
-    const currencies = [
-        'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'SEK', 'NZD',
-        'MXN', 'SGD', 'HKD', 'NOK', 'KRW', 'TRY', 'RUB', 'INR', 'BRL', 'ZAR', 'KES'
-    ].sort(); // Sort alphabetically for better UX
-
-    // Placeholder for your ExchangeRate-API key.
-    // YOU MUST REPLACE THIS WITH YOUR ACTUAL API KEY from https://www.exchangerate-api.com/
-    // The free tier offers 1,500 requests/month.
-    const EXCHANGE_RATE_API_KEY = ""; // <--- IMPORTANT: Replace with your API Key
-
-    const fetchExchangeRate = useCallback(async () => {
-        if (!EXCHANGE_RATE_API_KEY) {
-            setError("API Key for currency converter is missing. Please obtain one from exchangerate-api.com.");
-            setIsLoading(false);
-            setConvertedAmount(null); // Clear previous conversion
-            return;
-        }
-        if (fromCurrency === toCurrency) {
-            setConvertedAmount(amount);
-            setExchangeRate(1);
-            setIsLoading(false);
-            setError(null);
-            return;
-        }
-
-        setIsLoading(true);
-        setError(null);
-        setConvertedAmount(null); // Clear previous conversion result while loading
-        setExchangeRate(null); // Clear previous rate
-
-        try {
-            const response = await fetch(`https://v6.exchangerate-api.com/v6/${EXCHANGE_RATE_API_KEY}/latest/${fromCurrency}`);
-            if (!response.ok) {
-                // More specific error handling for common HTTP issues
-                if (response.status === 403) {
-                    throw new Error('Forbidden: API key might be invalid, expired, or rate limit exceeded.');
-                } else if (response.status === 404) {
-                    throw new Error('Not Found: Currency or API endpoint invalid.');
-                }
-                throw new Error(`Network response was not ok, status: ${response.status}`);
-            }
-            const data = await response.json();
-
-            if (data.result === 'success' && data.conversion_rates) {
-                const rate = data.conversion_rates[toCurrency];
-                if (rate) {
-                    setExchangeRate(rate);
-                    setConvertedAmount((parseFloat(amount) * rate).toFixed(2));
-                } else {
-                    setError(`Conversion rate for ${toCurrency} not found in data.`);
-                }
-            } else {
-                setError(data.result === 'error' ? data['error-type'] : 'Unknown error fetching exchange rates.');
-            }
-        } catch (e) {
-            console.error("Error fetching exchange rate:", e);
-            setError(`Failed to fetch exchange rates: ${e.message}`);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [amount, fromCurrency, toCurrency, EXCHANGE_RATE_API_KEY]); // Re-fetch when these change
-
-    useEffect(() => {
-        fetchExchangeRate();
-    }, [fetchExchangeRate]); // Call fetchExchangeRate when the memoized function changes
-
-    const handleAmountChange = (e) => {
-        const value = e.target.value;
-        // Allow empty string for user to clear input, otherwise parse as float
-        setAmount(value === '' ? '' : parseFloat(value));
-    };
-
-    const swapCurrencies = () => {
-        setToCurrency(fromCurrency); // Set 'To' to current 'From'
-        setFromCurrency(toCurrency); // Set 'From' to current 'To'
-        // fetchExchangeRate will be called automatically due to useEffect dependency
-    };
-
-    return (
-        <div className="bg-[#1A1F36] border border-[#C9B072] rounded-xl p-6 shadow-2xl flex flex-col items-center w-full max-w-sm mx-auto">
-            <h2 className="text-3xl font-bold text-[#F8F8F8] mb-6">Real-time Currency Converter</h2>
-            <div className="w-full space-y-4">
-                {/* Amount Input */}
-                <div className="flex flex-col">
-                    <label htmlFor="amount" className="text-[#CCD2E3] text-left mb-1">Amount:</label>
-                    <input
-                        id="amount"
-                        type="number"
-                        value={amount}
-                        onChange={handleAmountChange}
-                        className="p-3 rounded-lg bg-[#0A1128] text-[#F8F8F8] border border-[#4CAF50] focus:ring-2 focus:ring-[#C9B072] focus:outline-none transition-all"
-                        placeholder="Enter amount"
-                        min="0" // Prevent negative input
-                    />
-                </div>
-
-                {/* Currency Selection Dropdowns and Swap Button */}
-                <div className="flex items-center space-x-2">
-                    <div className="flex-1">
-                        <label htmlFor="fromCurrency" className="text-[#CCD2E3] text-left mb-1 block">From:</label>
-                        <select
-                            id="fromCurrency"
-                            value={fromCurrency}
-                            onChange={(e) => setFromCurrency(e.target.value)}
-                            className="w-full p-3 rounded-lg bg-[#0A1128] text-[#F8F8F8] border border-[#4CAF50] focus:ring-2 focus:ring-[#C9B072] focus:outline-none transition-all appearance-none cursor-pointer"
-                        >
-                            {currencies.map(currency => (
-                                <option key={currency} value={currency}>{currency}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <button
-                        onClick={swapCurrencies}
-                        className="mt-6 p-2 bg-[#4CAF50] text-[#F8F8F8] rounded-full shadow hover:bg-[#3D8F40] transition transform hover:rotate-180 text-lg flex items-center justify-center"
-                        aria-label="Swap Currencies"
-                    >
-                        ⇄
-                    </button>
-                    <div className="flex-1">
-                        <label htmlFor="toCurrency" className="text-[#CCD2E3] text-left mb-1 block">To:</label>
-                        <select
-                            id="toCurrency"
-                            value={toCurrency}
-                            onChange={(e) => setToCurrency(e.target.value)}
-                            className="w-full p-3 rounded-lg bg-[#0A1128] text-[#F8F8F8] border border-[#4CAF50] focus:ring-2 focus:ring-[#C9B072] focus:outline-none transition-all appearance-none cursor-pointer"
-                        >
-                            {currencies.map(currency => (
-                                <option key={currency} value={currency}>{currency}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-
-                {/* Convert Button */}
-                <button
-                    onClick={fetchExchangeRate}
-                    disabled={isLoading}
-                    className="w-full px-6 py-3 bg-[#C9B072] text-[#0A1128] font-semibold rounded-lg shadow hover:bg-[#B79A5F] transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {isLoading ? 'Converting...' : 'Convert'}
-                </button>
-
-                {/* Error Display */}
-                {error && (
-                    <div className="bg-red-800 text-[#F8F8F8] p-3 rounded-lg text-sm text-center">
-                        Error: {error}
-                    </div>
-                )}
-
-                {/* Converted Amount Display */}
-                {convertedAmount !== null && !error && (
-                    <div className="mt-4 p-4 bg-[#0A1128] border border-[#C9B072] rounded-lg text-center">
-                        <p className="text-xl text-[#CCD2E3]">Converted Amount:</p>
-                        <p className="text-4xl font-bold text-[#4CAF50]">{convertedAmount} {toCurrency}</p>
-                        {exchangeRate && (
-                            <p className="text-sm text-[#CCD2E3] mt-2">
-                                1 {fromCurrency} = {exchangeRate.toFixed(4)} {toCurrency}
-                            </p>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-
-// --- AccountingBookkeeping Page Component (Updated) ---
+// New AccountingBookkeeping Component with Tools Section
 const AccountingBookkeeping = () => {
-  const router = useRouter(); // Initialize router for navigation
+  // Local ref for animation within this specific page
+  const pageSectionsRef = useRef([]);
+  const handlePageSectionIntersect = useCallback((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('fade-in-up-active');
+        entry.target.classList.remove('opacity-0', 'translate-y-10');
+        if (entry.target.intersectionObserver) {
+          entry.target.intersectionObserver.unobserve(entry.target);
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const currentPageSections = pageSectionsRef.current;
+    const observer = new IntersectionObserver(handlePageSectionIntersect, {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.2
+    });
+
+    currentPageSections.forEach(section => {
+      if (section) {
+        observer.observe(section);
+        section.intersectionObserver = observer;
+      }
+    });
+
+    return () => {
+      currentPageSections.forEach(section => {
+        if (section && section.intersectionObserver) {
+          section.intersectionObserver.unobserve(section);
+        }
+      });
+      observer.disconnect();
+    };
+  }, [handlePageSectionIntersect]);
+
 
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
-      <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6 animate-fade-in-up">
+      <h1
+        className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6 opacity-0 translate-y-10 fade-in-up"
+        ref={el => pageSectionsRef.current.push(el)}
+      >
         Accounting & Bookkeeping Services
       </h1>
-      <p className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-        Ensure financial accuracy and compliance with our professional accounting and bookkeeping services. We manage your finances efficiently, giving you peace of mind and more time to focus on your business. Explore our accessible tools below.
+      <p
+        className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10 opacity-0 translate-y-10 fade-in-up"
+        ref={el => pageSectionsRef.current.push(el)}
+        style={{ animationDelay: '0.2s' }}
+      >
+        Ensure financial accuracy and compliance with our expert accounting and bookkeeping services. From daily transactions to comprehensive financial reporting, we provide the clarity you need to make informed business decisions.
       </p>
 
-      {/* Existing Service Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-4xl mb-16">
-        <div className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-            <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Ledger" alt="Ledger Management" className="mb-4 rounded-full p-2" />
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Ledger Management</h3>
-            <p className="text-[#CCD2E3]">Maintain accurate and up-to-date financial records.</p>
-        </div>
-        <div className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-            <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Payroll" alt="Payroll Processing" className="mb-4 rounded-full p-2" />
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Payroll Processing</h3>
-            <p className="text-[#CCD2E3]">Efficient and compliant payroll services.</p>
-        </div>
-        <div className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-            <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Tax" alt="Tax Preparation" className="mb-4 rounded-full p-2" />
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Tax Preparation</h3>
-            <p className="text-[#CCD2E3]">Streamlined tax preparation and filing.</p>
-        </div>
-      </div>
+      {/* Accounting Tools Section */}
+      <section className="py-12 w-full max-w-6xl">
+        <h2
+          className="text-4xl md:text-5xl font-extrabold text-center text-[#F8F8F8] mb-12 opacity-0 translate-y-10 fade-in-up"
+          ref={el => pageSectionsRef.current.push(el)}
+          style={{ animationDelay: '0.4s' }}
+        >
+          Essential Accounting Tools We Utilize
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Tool 1: Spreadsheet Software */}
+          <div
+            className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
+            ref={el => pageSectionsRef.current.push(el)}
+            style={{ animationDelay: '0.6s' }}
+          >
+            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
+              <FileSpreadsheet size={48} />
+            </div>
+            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Spreadsheet Software</h3>
+            <p className="text-[#CCD2E3] text-lg leading-relaxed">
+              Leveraging powerful tools like Excel and Google Sheets for detailed financial analysis, budgeting, and custom reporting.
+            </p>
+          </div>
 
-      {/* New Tools Section */}
-      <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 mt-16 animate-fade-in-up" style={{ animationDelay: '1s' }}>
-        Accessible Accounting Tools
-      </h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full max-w-6xl">
-        {/* Calculator */}
-        <div className="flex justify-center animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
-            <Calculator />
+          {/* Tool 2: Cloud Accounting Platforms */}
+          <div
+            className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
+            ref={el => pageSectionsRef.current.push(el)}
+            style={{ animationDelay: '0.8s' }}
+          >
+            <div className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4">
+              <Briefcase size={48} />
+            </div>
+            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Cloud Accounting Platforms</h3>
+            <p className="text-[#CCD2E3] text-lg leading-relaxed">
+              Proficient in industry-leading software like QuickBooks Online and Xero for seamless financial management and collaboration.
+            </p>
+          </div>
+
+          {/* Tool 3: Expense Tracking & Payroll Systems */}
+          <div
+            className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
+            ref={el => pageSectionsRef.current.push(el)}
+            style={{ animationDelay: '1.0s' }}
+          >
+            <div className="p-4 bg-[#4CAF50] text-[#0A1128] rounded-full mb-4">
+              <ReceiptText size={48} />
+            </div>
+            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Expense & Payroll Management</h3>
+            <p className="text-[#CCD2E3] text-lg leading-relaxed">
+              Streamlining your expense reports and payroll processing with integrated and efficient systems.
+            </p>
+          </div>
+
+           {/* Tool 4: Financial Calculators / Analysis Tools (Optional, demonstrating more tools) */}
+           <div
+            className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-8 flex flex-col items-center text-center shadow-lg transition-all duration-500 hover:scale-105 hover:shadow-2xl opacity-0 translate-y-10 fade-in-up"
+            ref={el => pageSectionsRef.current.push(el)}
+            style={{ animationDelay: '1.2s' }}
+          >
+            <div className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4">
+              <Calculator size={48} />
+            </div>
+            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">Financial Planning Tools</h3>
+            <p className="text-[#CCD2E3] text-lg leading-relaxed">
+              Utilizing specialized calculators and analysis tools for forecasting, tax planning, and investment insights.
+            </p>
+          </div>
+
         </div>
-        {/* Currency Converter */}
-        <div className="flex justify-center animate-fade-in-up" style={{ animationDelay: '1.4s' }}>
-            <CurrencyConverter />
-        </div>
-      </div>
+      </section>
 
       {/* Back button */}
-      <button onClick={() => router.back()} className="mt-20 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-fade-in-up" style={{ animationDelay: '1.6s' }}>
+      <Link to="/" className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-fade-in-up" style={{ animationDelay: '1.4s' }}>
         Back to Home
-      </button>
+      </Link>
     </div>
   );
 };
 
-export default AccountingBookkeeping;
+
+// Main App Component
+const App = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Function to toggle mobile navigation menu state
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const appSectionsRef = useRef([]); // A new ref for general app sections
+  const handleAppSectionIntersect = useCallback((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('fade-in-up-active');
+        entry.target.classList.remove('opacity-0', 'translate-y-10');
+        if (entry.target.intersectionObserver) {
+            entry.target.intersectionObserver.unobserve(entry.target);
+        }
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const currentAppSections = appSectionsRef.current;
+    const observer = new IntersectionObserver(handleAppSectionIntersect, {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.2
+    });
+
+    currentAppSections.forEach(section => {
+      if (section) {
+        observer.observe(section);
+        section.intersectionObserver = observer;
+      }
+    });
+
+    return () => {
+      currentAppSections.forEach(section => {
+        if (section && section.intersectionObserver) {
+            section.intersectionObserver.unobserve(section);
+        }
+      });
+      observer.disconnect();
+    };
+  }, [handleAppSectionIntersect]);
+
+
+  return (
+    // Outermost div for the entire application, applying base styles
+    <Router> {/* Wrap the entire application in BrowserRouter */}
+      <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] font-sans overflow-x-hidden">
+
+        {/* Inline style block for custom CSS animations.
+            These styles are embedded directly for simplicity in this single file context.
+            For larger projects, these would typically be in a dedicated CSS file. */}
+        <style>
+          {`
+          html, body { height: 100%; }
+          body { font-family: 'Inter', sans-serif; margin: 0; background-color: #0A1128; color: #F8F8F8; overflow-x: hidden; }
+          .jo-logo-container { position: relative; width: 500px; max-width: 90%; height: auto; aspect-ratio: 500 / 300; overflow: hidden; margin-left: auto; margin-right: auto; }
+          .jo-logo { animation: logoReveal 3s ease-out forwards; transform-origin: center; opacity: 0; width: 100%; height: 100%; object-fit: contain; }
+          @keyframes logoReveal { 0% { opacity: 0; transform: scale(0.7) translateY(20px); } 50% { opacity: 1; transform: scale(1.05) translateY(-5px); } 100% { opacity: 1; transform: scale(1); } }
+          .hero-text-animate { animation: textFadeIn 2s ease-out forwards; opacity: 0; transform: translateY(20px); }
+          @keyframes textFadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+          /* Updated fade-in-up for generic sections */
+          .fade-in-up { transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+          .fade-in-up-active { opacity: 1; transform: translateY(0); }
+          .shimmer-text { position: relative; display: inline-block; overflow: hidden; }
+          .shimmer-text::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shimmer 3s infinite; }
+          @keyframes shimmer { 0% { left: -100%; } 50% { left: 100%; } 100% { left: -100%; } }
+          .bg-particles::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at top left, rgba(201, 176, 114, 0.1) 0%, transparent 50%), radial-gradient(circle at bottom right, rgba(76, 175, 80, 0.1) 0%, transparent 50%); animation: bgPulse 15s infinite alternate ease-in-out; z-index: -1; }
+          @keyframes bgPulse { 0% { opacity: 0.7; transform: scale(1); } 100% { opacity: 1; transform: scale(1.02); } }
+          button, a { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+          nav a { min-width: unset; min-height: unset; }
+          `}
+        </style>
+
+        {/* Header Section (remains outside of Routes as it's common to all pages) */}
+        <header className="relative z-50 bg-[#0A1128] py-4 shadow-xl">
+          <nav className="container mx-auto px-6 flex items-center justify-between">
+            {/* Logo - Use Link to navigate to the home page */}
+            <Link to="/" className="text-[#C9B072] text-4xl font-extrabold tracking-tight">
+              <img src="https://i.imgur.com/zWVSml6.png" alt="JAKOM Logo" className="h-12 w-auto object-contain" />
+            </Link>
+
+            {/* Desktop Navigation - Use Link components */}
+            <div className="hidden md:flex space-x-8">
+              <Link to="/" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center"><Home className="mr-2" size={20} />Home</Link>
+              <Link to="/graphics-design" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center"><Paintbrush className="mr-2" size={20} />Graphics & Design</Link>
+              <Link to="/data-analysis" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center"><BarChart2 className="mr-2" size={20} />Data Analysis</Link>
+              <Link to="/accounting-bookkeeping" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center"><DollarSign className="mr-2" size={20} />Accounting & Bookkeeping</Link>
+              <Link to="/virtual-assistance" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center"><Headset className="mr-2" size={20} />Virtual Assistance</Link>
+              <Link to="/kids-hub" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center"><School className="mr-2" size={20} />Kids Hub</Link>
+              <Link to="/about-us" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center"><Info className="mr-2" size={20} />About Us</Link>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <button onClick={toggleMobileMenu} className="text-[#F8F8F8] focus:outline-none">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}></path>
+                </svg>
+              </button>
+            </div>
+          </nav>
+
+          {/* Mobile Navigation - Use Link components and close menu on click */}
+          <div className={`md:hidden ${mobileMenuOpen ? 'block' : 'hidden'} bg-[#0A1128] py-4`}>
+            <div className="flex flex-col items-center space-y-4">
+              <Link to="/" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center" onClick={toggleMobileMenu}><Home className="mr-2" size={20} />Home</Link>
+              <Link to="/graphics-design" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center" onClick={toggleMobileMenu}><Paintbrush className="mr-2" size={20} />Graphics & Design</Link>
+              <Link to="/data-analysis" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center" onClick={toggleMobileMenu}><BarChart2 className="mr-2" size={20} />Data Analysis</Link>
+              <Link to="/accounting-bookkeeping" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center" onClick={toggleMobileMenu}><DollarSign className="mr-2" size={20} />Accounting & Bookkeeping</Link>
+              <Link to="/virtual-assistance" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center" onClick={toggleMobileMenu}><Headset className="mr-2" size={20} />Virtual Assistance</Link>
+              <Link to="/kids-hub" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center" onClick={toggleMobileMenu}><School className="mr-2" size={20} />Kids Hub</Link>
+              <Link to="/about-us" className="text-[#F8F8F8] hover:text-[#C9B072] transition duration-300 text-lg flex items-center" onClick={toggleMobileMenu}><Info className="mr-2" size={20} />About Us</Link>
+            </div>
+          </div>
+        </header>
+
+        {/* Define Routes for different pages. The content within <Routes> will change based on the URL. */}
+        <Routes>
+          {/* Home Page Route - Renders all original sections of the home page */}
+          <Route path="/" element={
+            <> {/* Use a React Fragment to group multiple elements for the home page route */}
+              <section className="relative h-screen flex flex-col justify-center items-center text-center px-6 bg-[#0A1128] overflow-hidden bg-particles">
+                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-rgba(201, 176, 114, 0.05) to-transparent pointer-events-none"></div>
+                  <div className="relative z-10 max-w-4xl mx-auto pb-16">
+                      <div className="jo-logo-container mx-auto">
+                          <img
+                              src="https://i.imgur.com/zWVSml6.png"
+                              alt="JAKOM Logo"
+                              className="jo-logo"
+                              onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/500x300/0A1128/C9B072?text=Logo+Missing'; }}
+                          />
+                      </div>
+                      <h1 className="text-6xl md:text-7xl font-extrabold text-[#F8F8F8] leading-tight mt-8 mb-4 hero-text-animate">
+                          JAKOM: Your <span className="shimmer-text text-[#C9B072]">One-Stop</span> Tech Solution
+                      </h1>
+                      <p className="text-xl md:text-2xl text-[#CCD2E3] mb-8 hero-text-animate" style={{ animationDelay: '2.5s' }}>
+                          Empowering Your Business with Seamless Integration and Expert Support.
+                      </p>
+                      <button className="px-10 py-4 bg-[#4CAF50] text-[#F8F8F8] font-semibold text-xl rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 hero-text-animate" style={{ animationDelay: '3s' }}>
+                          Get Started Today
+                      </button>
+                  </div>
+              </section>
+
+              <section className="py-20 bg-[#0A1128] container mx-auto px-6">
+                  <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 fade-in-up" ref={el => appSectionsRef.current.push(el)}>
+                      Our Integrated Services
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                      {/* Passed 'path' prop to ServiceCard */}
+                      <ServiceCard icon={Paintbrush} title="Graphics & Design" description="Stunning visuals that capture attention and communicate your brand's unique story effectively." delay={0} path="/graphics-design" />
+                      <ServiceCard icon={BarChart2} title="Data Analysis" description="Unlock actionable insights from your data to drive informed decisions and strategic growth." delay={100} path="/data-analysis" />
+                      <ServiceCard icon={DollarSign} title="Accounting & Bookkeeping" description="Expert financial management to ensure accuracy, compliance, and peace of mind." delay={200} path="/accounting-bookkeeping" />
+                      <ServiceCard icon={Headset} title="Virtual Assistance" description="Efficient administrative support, freeing your time to focus on core business activities." delay={300} path="/virtual-assistance" />
+                  </div>
+              </section>
+
+              <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
+                  <div className="flex flex-col md:flex-row items-center gap-12">
+                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 flex justify-center opacity-0 translate-y-10 fade-in-up">
+                          <img src="https://placehold.co/500x350/0A1128/4CAF50?text=Kids+Hub+Fun" alt="Kids Hub" className="rounded-xl shadow-2xl object-cover" />
+                      </div>
+                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 text-center md:text-left opacity-0 translate-y-10 fade-in-up" style={{ animationDelay: '200ms' }}>
+                          <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6">
+                              Empowering the Next Generation: <span className="text-[#4CAF50]">Kids Hub</span>
+                          </h2>
+                          <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8">
+                              At JAKOM, we believe in nurturing talent from a young age. Our Kids Hub offers engaging and interactive programs designed to introduce children to the exciting world of technology, creativity, and problem-solving. Spark curiosity and build foundational skills for a brighter future!
+                          </p>
+                          {/* This button on the home page specifically links to the Kids Hub page */}
+                          <Link to="/kids-hub" className="px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 inline-flex items-center justify-content-center">
+                              Explore Kids Hub
+                          </Link>
+                      </div>
+                  </div>
+              </section>
+
+              <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
+                  <div className="max-w-3xl mx-auto text-center">
+                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}>
+                          About JAKOM
+                      </h2>
+                      <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}>
+                          JAKOM is more than just a service provider; we are your dedicated partner in navigating the complexities of modern business. Our mission is to simplify operations, enhance efficiency, and foster growth for enterprises of all sizes through innovative tech solutions and unparalleled expertise. We pride ourselves on delivering integrated services that truly make a difference.
+                      </p>
+                      {/* This button on the home page specifically links to the About Us page */}
+                      <Link to="/about-us" className="px-8 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 inline-flex items-center justify-content-center">
+                          Read Our Full Story
+                      </Link>
+                  </div>
+              </section>
+
+              <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] text-center px-6">
+                  <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}>
+                      Ready to Elevate Your Business?
+                  </h2>
+                  <p className="text-xl text-[#CCD2E3] mb-10 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}>
+                      Let's discuss how JAKOM's comprehensive solutions can empower your success.
+                  </p>
+                  {/* This button likely leads to a contact form/page */}
+                  <Link to="/contact-us" className="px-12 py-4 bg-[#C9B072] text-[#0A1128] font-bold text-xl rounded-full shadow-2xl transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-pulse fade-in-up inline-flex items-center justify-content-center" style={{ animationDelay: '200ms' }}>
+                      Contact Us Now
+                  </Link>
+              </section>
+            </>
+          } />
+
+          {/* Routes for other pages */}
+          <Route path="/graphics-design" element={<GraphicsDesign />} />
+          <Route path="/data-analysis" element={<DataAnalysis />} />
+          <Route path="/accounting-bookkeeping" element={<AccountingBookkeeping />} /> {/* This route now uses the new component */}
+          <Route path="/virtual-assistance" element={<VirtualAssistance />} />
+          <Route path="/kids-hub" element={<KidsHub />} />
+          <Route path="/about-us" element={<AboutUs />} />
+          {/* Updated Contact Us page with direct contact options */}
+          <Route path="/contact-us" element={
+            <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
+              <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6">Get in Touch with JAKOM</h1>
+              <p className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10">
+                We're here to help you elevate your business. Choose your preferred method to connect:
+              </p>
+              <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-6 mt-8">
+                {/* Email Link */}
+                <a
+                  href="mailto:emmanuelomondiobare@gmail.com?subject=Inquiry from JAKOM Website"
+                  className="px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 flex items-center space-x-2 w-full sm:w-auto"
+                >
+                  <Mail size={24} />
+                  <span>Email Us</span>
+                </a>
+
+                {/* Phone Call Link */}
+                <a
+                  href="tel:+254794255000"
+                  className="px-6 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 flex items-center space-x-2 w-full sm:w-auto"
+                >
+                  <Phone size={24} />
+                  <span>Call Us</span>
+                </a>
+
+                {/* SMS Link */}
+                <a
+                  href="sms:+254794255000?body=Hello JAKOM, I have an inquiry from your website."
+                  className="px-6 py-3 bg-[#0A1128] border border-[#C9B072] text-[#F8F8F8] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:shadow-lg flex items-center space-x-2 w-full sm:w-auto"
+                >
+                  <MessageSquare size={24} />
+                  <span>Send SMS</span>
+                </a>
+
+                {/* WhatsApp Link */}
+                <a
+                  href="https://wa.me/254794255000?text=Hello%20JAKOM,%20I%20have%20an%20inquiry%20from%20your%20website."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-[#25D366] text-white font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 flex items-center space-x-2 w-full sm:w-auto"
+                >
+                  <Smartphone size={24} />
+                  <span>WhatsApp Us</span>
+                </a>
+              </div>
+              <Link to="/" className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
+                Back to Home
+              </Link>
+            </div>
+          } />
+        </Routes>
+
+        {/* Footer (remains outside of Routes as it's common to all pages) */}
+        <footer className="bg-[#0A1128] border-t border-[#C9B072] py-8 text-center text-[#CCD2E3] text-lg">
+          <div className="container mx-auto px-6">
+            <p>&copy; {new Date().getFullYear()} JAKOM. All rights reserved.</p>
+            <div className="flex justify-center space-x-6 mt-4">
+              {/* Added Email Icon */}
+              <a href="mailto:emmanuelomondiobare@gmail.com" className="hover:text-[#C9B072] transition duration-300" aria-label="Email Us">
+                <Mail size={24} />
+              </a>
+              {/* Added WhatsApp Icon */}
+              <a href="https://wa.me/254794255000" target="_blank" rel="noopener noreferrer" className="hover:text-[#C9B072] transition duration-300" aria-label="WhatsApp Us">
+                <Smartphone size={24} />
+              </a>
+              {/* Original placeholders, kept for context unless explicitly removed */}
+              <a href="https://example.com/users" target="_blank" rel="noopener noreferrer" className="hover:text-[#C9B072] transition duration-300"><Users size={24} /></a>
+              <a href="https://example.com/code" target="_blank" rel="noopener noreferrer" className="hover:text-[#C9B072] transition duration-300"><Code size={24} /></a>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
