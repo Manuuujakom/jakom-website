@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Import routing components: BrowserRouter (aliased as Router), Routes, and Route, Link
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, Home, Mail, Phone, MessageSquare, Smartphone } from 'lucide-react'; // Added Mail, Phone, MessageSquare, Smartphone
+import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, Home, Mail, Phone, MessageSquare, Smartphone } from 'lucide-react';
 
 // --- Placeholder Page Components ---
 const PlaceholderPage = ({ title }) => (
@@ -25,7 +25,8 @@ const AboutUs = () => <PlaceholderPage title="About Us" />;
 
 // Custom functional component for a Service Card
 // This component now manages its own visibility animation using IntersectionObserver
-const ServiceCard = ({ icon: Icon, title, description, delay }) => {
+// Added 'path' prop to link to the respective service page
+const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef(null); // Ref for this specific card
 
@@ -72,15 +73,16 @@ const ServiceCard = ({ icon: Icon, title, description, delay }) => {
       // The delay is now applied to the transition itself, for cumulative effect per card
       style={{ transitionDelay: `${delay}ms` }}
     >
-      <div className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4">
-        {/* Render the Lucide Icon component passed as a prop */}
+      <Link to={path} className="p-4 bg-[#C9B072] text-[#0A1128] rounded-full mb-4 inline-flex items-center justify-center">
+        {/* Render the Lucide Icon component passed as a prop, wrapped in Link */}
         <Icon size={48} />
-      </div>
+      </Link>
       <h3 className="text-2xl font-bold text-[#F8F8F8] mb-3">{title}</h3>
       <p className="text-[#CCD2E3] text-lg leading-relaxed">{description}</p>
-      <button className="mt-6 px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold rounded-full hover:bg-opacity-90 transition duration-300 transform hover:scale-105 shadow-md">
+      {/* Changed button to Link and added 'to' prop */}
+      <Link to={path} className="mt-6 px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold rounded-full hover:bg-opacity-90 transition duration-300 transform hover:scale-105 shadow-md">
         Learn More
-      </button>
+      </Link>
     </div>
   );
 };
@@ -88,16 +90,12 @@ const ServiceCard = ({ icon: Icon, title, description, delay }) => {
 // Main App Component
 const App = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  // Removed sectionsRef from App component as ServiceCard now manages its own visibility
 
   // Function to toggle mobile navigation menu state
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  // Re-implemented a simple IntersectionObserver for other sections if needed,
-  // separate from ServiceCards. For simplicity, let's keep it if other sections also animate.
-  // We'll manage this separately, assuming other sections like "About JAKOM" also need this.
   const appSectionsRef = useRef([]); // A new ref for general app sections
   const handleAppSectionIntersect = useCallback((entries) => {
     entries.forEach(entry => {
@@ -239,23 +237,24 @@ const App = () => {
               </section>
 
               <section className="py-20 bg-[#0A1128] container mx-auto px-6">
-                  <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 fade-in-up" ref={el => appSectionsRef.current.push(el)}> {/* Use appSectionsRef */}
+                  <h2 className="text-5xl font-extrabold text-center text-[#F8F8F8] mb-16 fade-in-up" ref={el => appSectionsRef.current.push(el)}>
                       Our Integrated Services
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-                      <ServiceCard icon={Paintbrush} title="Graphics & Design" description="Stunning visuals that capture attention and communicate your brand's unique story effectively." delay={0} />
-                      <ServiceCard icon={BarChart2} title="Data Analysis" description="Unlock actionable insights from your data to drive informed decisions and strategic growth." delay={100} />
-                      <ServiceCard icon={DollarSign} title="Accounting & Bookkeeping" description="Expert financial management to ensure accuracy, compliance, and peace of mind." delay={200} />
-                      <ServiceCard icon={Headset} title="Virtual Assistance" description="Efficient administrative support, freeing your time to focus on core business activities." delay={300} />
+                      {/* Passed 'path' prop to ServiceCard */}
+                      <ServiceCard icon={Paintbrush} title="Graphics & Design" description="Stunning visuals that capture attention and communicate your brand's unique story effectively." delay={0} path="/graphics-design" />
+                      <ServiceCard icon={BarChart2} title="Data Analysis" description="Unlock actionable insights from your data to drive informed decisions and strategic growth." delay={100} path="/data-analysis" />
+                      <ServiceCard icon={DollarSign} title="Accounting & Bookkeeping" description="Expert financial management to ensure accuracy, compliance, and peace of mind." delay={200} path="/accounting-bookkeeping" />
+                      <ServiceCard icon={Headset} title="Virtual Assistance" description="Efficient administrative support, freeing your time to focus on core business activities." delay={300} path="/virtual-assistance" />
                   </div>
               </section>
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
                   <div className="flex flex-col md:flex-row items-center gap-12">
-                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 flex justify-center opacity-0 translate-y-10 fade-in-up"> {/* Use appSectionsRef */}
+                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 flex justify-center opacity-0 translate-y-10 fade-in-up">
                           <img src="https://placehold.co/500x350/0A1128/4CAF50?text=Kids+Hub+Fun" alt="Kids Hub" className="rounded-xl shadow-2xl object-cover" />
                       </div>
-                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 text-center md:text-left opacity-0 translate-y-10 fade-in-up" style={{ animationDelay: '200ms' }}> {/* Use appSectionsRef */}
+                      <div ref={el => appSectionsRef.current.push(el)} className="md:w-1/2 text-center md:text-left opacity-0 translate-y-10 fade-in-up" style={{ animationDelay: '200ms' }}>
                           <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6">
                               Empowering the Next Generation: <span className="text-[#4CAF50]">Kids Hub</span>
                           </h2>
@@ -272,10 +271,10 @@ const App = () => {
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] container mx-auto px-6">
                   <div className="max-w-3xl mx-auto text-center">
-                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}> {/* Use appSectionsRef */}
+                      <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}>
                           About JAKOM
                       </h2>
-                      <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}> {/* Use appSectionsRef */}
+                      <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}>
                           JAKOM is more than just a service provider; we are your dedicated partner in navigating the complexities of modern business. Our mission is to simplify operations, enhance efficiency, and foster growth for enterprises of all sizes through innovative tech solutions and unparalleled expertise. We pride ourselves on delivering integrated services that truly make a difference.
                       </p>
                       {/* This button on the home page specifically links to the About Us page */}
@@ -286,10 +285,10 @@ const App = () => {
               </section>
 
               <section className="py-20 bg-[#0A1128] border-t border-[#C9B072] text-center px-6">
-                  <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}> {/* Use appSectionsRef */}
+                  <h2 className="text-5xl font-extrabold text-[#F8F8F8] mb-6 fade-in-up" ref={el => appSectionsRef.current.push(el)}>
                       Ready to Elevate Your Business?
                   </h2>
-                  <p className="text-xl text-[#CCD2E3] mb-10 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}> {/* Use appSectionsRef */}
+                  <p className="text-xl text-[#CCD2E3] mb-10 fade-in-up" ref={el => appSectionsRef.current.push(el)} style={{ animationDelay: '100ms' }}>
                       Let's discuss how JAKOM's comprehensive solutions can empower your success.
                   </p>
                   {/* This button likely leads to a contact form/page */}
@@ -365,7 +364,15 @@ const App = () => {
           <div className="container mx-auto px-6">
             <p>&copy; {new Date().getFullYear()} JAKOM. All rights reserved.</p>
             <div className="flex justify-center space-x-6 mt-4">
-              {/* FIXED: Replaced href="#" with a placeholder URL for accessibility */}
+              {/* Added Email Icon */}
+              <a href="mailto:emmanuelomondiobare@gmail.com" className="hover:text-[#C9B072] transition duration-300" aria-label="Email Us">
+                <Mail size={24} />
+              </a>
+              {/* Added WhatsApp Icon */}
+              <a href="https://wa.me/254794255000" target="_blank" rel="noopener noreferrer" className="hover:text-[#C9B072] transition duration-300" aria-label="WhatsApp Us">
+                <Smartphone size={24} />
+              </a>
+              {/* Original placeholders, kept for context unless explicitly removed */}
               <a href="https://example.com/users" target="_blank" rel="noopener noreferrer" className="hover:text-[#C9B072] transition duration-300"><Users size={24} /></a>
               <a href="https://example.com/code" target="_blank" rel="noopener noreferrer" className="hover:text-[#C9B072] transition duration-300"><Code size={24} /></a>
             </div>
