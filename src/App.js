@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Import routing components: BrowserRouter (aliased as Router), Routes, and Route, Link
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, Home } from 'lucide-react';
+import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, Home, Mail, Phone, MessageSquare, Smartphone } from 'lucide-react'; // Added Mail, Phone, MessageSquare, Smartphone
 
-// --- Placeholder Page Components (to resolve "Module not found" errors) ---
-// You should replace these with your actual page components once they are created
-// in the src/pages/ directory. For now, they allow the app to compile and run.
-
+// --- Placeholder Page Components ---
 const PlaceholderPage = ({ title }) => (
   <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
     <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6">{title}</h1>
@@ -14,7 +11,7 @@ const PlaceholderPage = ({ title }) => (
       Content for {title} will go here.
     </p>
     <Link to="/" className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
-        Back to Home
+      Back to Home
     </Link>
   </div>
 );
@@ -287,16 +284,55 @@ const App = () => {
           <Route path="/virtual-assistance" element={<VirtualAssistance />} />
           <Route path="/kids-hub" element={<KidsHub />} />
           <Route path="/about-us" element={<AboutUs />} />
-          {/* Placeholder for a contact us page */}
+          {/* Updated Contact Us page with direct contact options */}
           <Route path="/contact-us" element={
             <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
-                <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6">Contact Us</h1>
-                <p className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10">
-                    Reach out to us to learn more about how JAKOM can help your business thrive.
-                </p>
-                <button onClick={() => window.history.back()} className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
-                    Back to Home
-                </button>
+              <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6">Get in Touch with JAKOM</h1>
+              <p className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10">
+                We're here to help you elevate your business. Choose your preferred method to connect:
+              </p>
+              <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-6 mt-8">
+                {/* Email Link */}
+                <a
+                  href="mailto:emmanuelomondiobare@gmail.com?subject=Inquiry from JAKOM Website"
+                  className="px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 flex items-center space-x-2 w-full sm:w-auto"
+                >
+                  <Mail size={24} />
+                  <span>Email Us</span>
+                </a>
+
+                {/* Phone Call Link */}
+                <a
+                  href="tel:+254794255000"
+                  className="px-6 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 flex items-center space-x-2 w-full sm:w-auto"
+                >
+                  <Phone size={24} />
+                  <span>Call Us</span>
+                </a>
+
+                {/* SMS Link */}
+                <a
+                  href="sms:+254794255000?body=Hello JAKOM, I have an inquiry from your website."
+                  className="px-6 py-3 bg-[#0A1128] border border-[#C9B072] text-[#F8F8F8] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:shadow-lg flex items-center space-x-2 w-full sm:w-auto"
+                >
+                  <MessageSquare size={24} />
+                  <span>Send SMS</span>
+                </a>
+
+                {/* WhatsApp Link */}
+                <a
+                  href="https://wa.me/254794255000?text=Hello%20JAKOM,%20I%20have%20an%20inquiry%20from%20your%20website."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 bg-[#25D366] text-white font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 flex items-center space-x-2 w-full sm:w-auto"
+                >
+                  <Smartphone size={24} />
+                  <span>WhatsApp Us</span>
+                </a>
+              </div>
+              <Link to="/" className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
+                Back to Home
+              </Link>
             </div>
           } />
         </Routes>
