@@ -8,14 +8,18 @@ import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, 
 // --- Import your actual page components from the src/pages directory ---
 // These imports are crucial to ensure App.js renders the content from those specific files.
 // Ensure each of these files (e.g., src/pages/GraphicsDesign.js) exports its component as 'default'.
-// Added '.js' extension to resolve module not found errors.
-import GraphicsDesignPage from './pages/GraphicsDesign.js';
-import DataAnalysisPage from './pages/DataAnalysis.js';
-import AccountingBookkeepingPage from './pages/AccountingBookkeeping.js';
-import VirtualAssistancePage from './pages/VirtualAssistance.js';
-import KidsHubPage from './pages/KidsHub.js';
-import AboutUsPage from './pages/AboutUs.js';
-import ContactUsPage from './pages/ContactUs.js';
+import GraphicsDesignPage from './pages/GraphicsDesign'; // Renamed to avoid conflict with local const
+import DataAnalysisPage from './pages/DataAnalysis';     // Renamed for clarity
+import AccountingBookkeepingPage from './pages/AccountingBookkeeping'; // Renamed for clarity
+import VirtualAssistancePage from './pages/VirtualAssistance'; // Renamed for clarity
+import KidsHubPage from './pages/KidsHub';               // Renamed for clarity
+import AboutUsPage from './pages/AboutUs';               // Renamed for clarity
+import ContactUsPage from './pages/ContactUs';           // The new ContactUs component
+
+// Import the reusable PlaceholderPage component
+// Adjust the path based on where you decide to place PlaceholderPage.js (e.g., in src/components/)
+import PlaceholderPage from './components/PlaceholderPage';
+
 
 // Custom functional component for a Service Card
 // This component now manages its own visibility animation using IntersectionObserver
@@ -49,7 +53,7 @@ const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
     // Cleanup function: disconnect the observer when the component unmounts
     return () => {
       if (cardRef.current) {
-        observer.unobserve(card.current);
+        observer.unobserve(cardRef.current);
       }
     };
   }, []); // Empty dependency array means this effect runs once on mount
@@ -157,11 +161,6 @@ const App = () => {
     <Router> {/* Wrap the entire application in BrowserRouter */}
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] font-sans overflow-x-hidden">
 
-        {/* Tailwind CSS is typically loaded via CDN or build process.
-            For this environment, we ensure its availability for responsive styling. */}
-        <script src="https://cdn.tailwindcss.com"></script>
-
-        {/* Global Styles */}
         <style>
           {`
           html, body { height: 100%; }
