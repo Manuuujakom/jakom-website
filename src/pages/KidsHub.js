@@ -12,7 +12,7 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
   const gameWrapperRef = useRef(null); // Ref for the main game wrapper for sizing
 
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0); // Track high score for the session
+  const [highScore, setHighScore] = useState(0); // New: Track high score for the session
   const [timeLeft, setTimeLeft] = useState(60); // GAME_DURATION
   const [currentWord, setCurrentWord] = useState('');
   const [gameActive, setGameActive] = useState(false);
@@ -141,12 +141,12 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
       textInputRef.current.value = '';
       textInputRef.current.focus();
     }
-  }, [words]);
+  }, [words]); // Dependency on words.current implicit through words.current.length
 
   // Unified End Game function for timer end and quit
   const endGame = useCallback((quit = false) => {
     setGameActive(false);
-    clearInterval(gameIntervalRef.current); // Ensure interval is cleared
+    clearInterval(gameIntervalRef.current);
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
@@ -175,32 +175,21 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
     setShowOverlay(true);
   }, [score, highScore, accentColor, swahiliPhrases, playGameOverSound, playNewRecordSound]);
 
-  // Corrected countdown logic: Use a dedicated useEffect for the timer
-  useEffect(() => {
-    if (!gameActive) {
-      clearInterval(gameIntervalRef.current); // Ensure interval is cleared if game is not active
-      return;
-    }
-
-    gameIntervalRef.current = setInterval(() => {
-      setTimeLeft(prevTime => {
-        const newTime = prevTime - 1;
-        if (newTime <= 0) {
-          clearInterval(gameIntervalRef.current); // Stop timer when it reaches 0
-          endGame(false); // Game ended by timer
-          return 0;
-        }
-        return newTime;
-      });
-    }, 1000);
-
-    // Cleanup function for the effect
-    return () => clearInterval(gameIntervalRef.current);
-  }, [gameActive, endGame]); // Dependencies: gameActive to start/stop, endGame for its latest reference
+  // Corrected countdown logic
+  const updateGame = useCallback(() => {
+    setTimeLeft(prevTime => {
+      const newTime = prevTime - 1;
+      if (newTime <= 0) {
+        endGame(false); // Game ended by timer
+        return 0;
+      }
+      return newTime;
+    });
+  }, [endGame]);
 
   const gameLoop = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return; // Add null check for canvas context
     const ctx = canvas.getContext('2d');
     const groundLevel = groundLevelRef.current;
 
@@ -258,29 +247,23 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
     if (!displayedWord) return;
 
     let highlightedHtml = '';
-    let isCorrectPrefix = true; // Flag to check if the typed prefix matches the word
+    let isCorrectPrefix = true;
     for (let i = 0; i < displayedWord.length; i++) {
-      if (i < typedText.length) {
-        if (typedText[i].toLowerCase() === displayedWord[i].toLowerCase()) {
-          highlightedHtml += `<span style="color: yellow;">${displayedWord[i]}</span>`;
-        } else {
-          highlightedHtml += `<span style="color: red;">${displayedWord[i]}</span>`;
-          isCorrectPrefix = false; // Mismatch found
-        }
+      if (typedText[i] && typedText[i].toLowerCase() === displayedWord[i].toLowerCase()) {
+        highlightedHtml += `<span style="color: yellow;">${displayedWord[i]}</span>`;
+      } else if (typedText[i]) {
+        highlightedHtml += `<span style="color: red;">${displayedWord[i]}</span>`;
+        isCorrectPrefix = false; // Mark if a mismatch occurs
       } else {
         highlightedHtml += `<span>${displayedWord[i]}</span>`;
       }
     }
     wordDisplayRef.current.innerHTML = highlightedHtml;
 
-    // Play wrong sound only if the last typed character was incorrect
-    // and the input is not empty (e.g., prevents sound on backspace)
-    if (typedText.length > 0 && !isCorrectPrefix && typedText.length === textInputRef.current.value.length) {
-      const lastTypedChar = typedText[typedText.length - 1];
-      const expectedChar = displayedWord[typedText.length - 1]?.toLowerCase();
-      if (lastTypedChar && lastTypedChar !== expectedChar) {
-        playWrongSound();
-      }
+    // Play wrong sound only if a character is typed incorrectly (and input isn't empty)
+    // This prevents sound on backspace or initial empty input
+    if (typedText.length > 0 && !isCorrectPrefix && textInputRef.current.value.length === typedText.length) {
+      playWrongSound();
     }
   }, [playWrongSound]);
 
@@ -315,13 +298,11 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
     }, { once: true });
   }, []);
 
-  const handleInput = useCallback((event) => { // Accept event object
+  const handleInput = useCallback(() => {
     if (!gameActive) return;
 
-    const typedText = event.target.value.toLowerCase();
-    
+    const typedText = textInputRef.current.value.toLowerCase();
     // Call highlightIncorrectLetters on every input change for immediate feedback
-    // The sound logic for wrong answers is now primarily within highlightIncorrectLetters
     highlightIncorrectLetters(typedText);
 
     if (typedText === currentWord) {
@@ -335,13 +316,14 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
       showTemporaryMessage(swahiliPhrases.correctWord, 'green');
       getRandomWord(); // Get next word
     }
+    // No else here, as highlightIncorrectLetters handles the "wrong" sound on individual character mismatch
   }, [gameActive, currentWord, vehicle, playCorrectSound, showTemporaryMessage, getRandomWord, highlightIncorrectLetters, swahiliPhrases.correctWord]);
 
   const startGame = useCallback(() => {
     setScore(0);
     setTimeLeft(60); // Reset to GAME_DURATION
     vehicle.x = 50; // Reset vehicle position
-    setGameActive(true); // This will trigger the timer useEffect AND the animation useEffect
+    setGameActive(true);
     setShowOverlay(false);
     shuffledWordsForSession.current = []; // Clear and re-shuffle words for new session
     if (textInputRef.current) {
@@ -350,8 +332,11 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
       textInputRef.current.focus();
     }
     getRandomWord(); // Get the first word of the new session
-    // Removed direct gameLoop() call here. Let the useEffect handle it.
-  }, [getRandomWord, vehicle]); // Removed gameLoop from dependencies as it's not called directly
+    // Make sure to clear any existing interval before setting a new one
+    clearInterval(gameIntervalRef.current);
+    gameIntervalRef.current = setInterval(updateGame, 1000);
+    gameLoop();
+  }, [getRandomWord, updateGame, gameLoop, vehicle]);
 
   const handleQuitGame = useCallback(() => {
     endGame(true); // Call endGame with 'quit' flag
@@ -374,43 +359,11 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
     canvas.height = gameWrapper.clientHeight - headerHeight - infoHeight - typingAreaHeight;
     groundLevelRef.current = canvas.height * 0.8; // 80% of canvas height for ground
     vehicle.y = groundLevelRef.current - vehicle.height; // Adjust vehicle y position
-    // Only redraw if the game is active, or if it's the initial overlay state
-    // This ensures elements are drawn correctly when the game starts or when overlay is shown.
-    if (gameActive || showOverlay) {
-        // gameLoop(); // Removed direct call, relying on useEffect for continuous animation
-        // For a single redraw on resize if not actively gaming, we can force a simple draw:
-        if (!gameActive) { // If game not active, but overlay shown (e.g., initial load or game over)
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            // Re-draw static background elements for correct sizing
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
-            ctx.fillStyle = '#87ceeb';
-            ctx.fillRect(0, 0, canvas.width, groundLevelRef.current);
-            ctx.fillStyle = '#a0522d';
-            ctx.fillRect(0, groundLevelRef.current, canvas.width, canvas.height - groundLevelRef.current);
-            ctx.fillStyle = '#367c39';
-            ctx.fillRect(0, groundLevelRef.current, canvas.width, 10);
-            ctx.fillStyle = accentColor;
-            ctx.beginPath();
-            ctx.arc(canvas.width - 70, 70, 40, 0, Math.PI * 2);
-            ctx.fill();
-            // Draw clouds etc. as needed for the static display
-             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-             ctx.beginPath();
-             ctx.arc(150, 80, 30, 0, Math.PI * 2);
-             ctx.arc(190, 80, 25, 0, Math.PI * 2);
-             ctx.arc(170, 60, 20, 0, Math.PI * 2);
-             ctx.fill();
-
-             ctx.beginPath();
-             ctx.arc(canvas.width - 250, 100, 25, 0, Math.PI * 2);
-             ctx.arc(canvas.width - 210, 100, 20, 0, Math.PI * 2);
-             ctx.arc(canvas.width - 230, 80, 18, 0, Math.PI * 2);
-             ctx.fill();
-          }
-        }
+    // Only redraw if the game is active, otherwise the initial gameLoop from startGame will draw
+    if (gameActive) { // Add gameActive check here
+        gameLoop();
     }
-  }, [gameActive, showOverlay, vehicle, accentColor]); // Added showOverlay to dependencies
+  }, [gameLoop, vehicle, gameActive]); // Add gameActive to dependencies
 
   // Initial setup and resize on component mount
   useEffect(() => {
@@ -426,9 +379,9 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
         audioContextRef.current.close().catch(e => console.error("Error closing audio context:", e));
       }
     };
-  }, [resizeCanvas]);
+  }, [resizeCanvas]); // Dependency: resizeCanvas is stable due to useCallback
 
-  // Effect to manage the animation frame loop based on gameActive state
+  // Effect to update game loop when gameActive changes
   useEffect(() => {
     if (gameActive) {
       animationFrameRef.current = requestAnimationFrame(gameLoop);
