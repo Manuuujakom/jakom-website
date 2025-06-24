@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // CyberSafariGame Component
-const CyberSafariGame = ({ themeColors }) => {
+const CyberSafariGame = ({ themeColors, onClose }) => {
   // Destructure theme colors for easier access
   const { primaryBg, textColor, accentColor, secondaryText, borderColor } = themeColors;
 
@@ -101,7 +101,7 @@ const CyberSafariGame = ({ themeColors }) => {
     // If all words have been used, reshuffle the entire list
     if (shuffledWordsForSession.current.length === 0) {
       // Fisher-Yates (Knuth) shuffle algorithm for `words`
-      let tempWords = [...words]; // Create a mutable copy
+      let tempWords = [...words.current]; // Create a mutable copy of words.current
       for (let i = tempWords.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [tempWords[i], tempWords[j]] = [tempWords[j], tempWords[i]]; // Swap
@@ -118,7 +118,7 @@ const CyberSafariGame = ({ themeColors }) => {
       textInputRef.current.value = '';
       textInputRef.current.focus();
     }
-  }, [words]);
+  }, [words]); // Dependency on words.current implicit through words.current.length
 
   // Unified End Game function for timer end and quit
   const endGame = useCallback((quit = false) => {
@@ -349,81 +349,94 @@ const CyberSafariGame = ({ themeColors }) => {
     <>
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 
-      <div
-        ref={gameWrapperRef}
-        className="relative rounded-xl shadow-lg flex flex-col overflow-hidden max-w-[900px] w-[95vw] h-[95vh] max-h-[600px]"
-        style={{
-          backgroundColor: `rgba(255, 255, 255, 0.1)`, // Slightly transparent white overlay over main background
-          boxShadow: `0 0 30px rgba(0, 0, 0, 0.4)`,
-          color: textColor // Default text color
-        }}
-      >
-        <div className="game-header p-[15px_20px] rounded-t-[20px] text-center text-[1.5rem] relative z-10"
-             style={{ backgroundColor: accentColor, fontFamily: "'Press Start 2P', cursive", boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)" }}>
-          CYBER SAFARI: KASI YA KOMPYUTA
-        </div>
-        <div className="game-info flex justify-around p-[10px_20px] text-[1.1rem] font-semibold border-b-[2px] z-9"
-             style={{ backgroundColor: borderColor, borderColor: borderColor }}>
-          <div>Alama (Score): <span id="score">{score}</span></div>
-          <div>Muda (Time): <span id="timer">{timeLeft}s</span></div>
-          {gameActive && ( // Show quit button only when game is active
-            <button
-              onClick={handleQuitGame}
-              className="px-4 py-1 rounded-md text-sm font-semibold cursor-pointer transition-all duration-200 ease"
-              style={{ backgroundColor: primaryBg, color: textColor, border: `1px solid ${textColor}` }}
-            >
-              Acha Mchezo (Quit)
-            </button>
+      {/* Full-screen overlay for the game */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4"
+           style={{ backgroundColor: `rgba(10, 17, 40, 0.95)` }}> {/* Using primaryBg with opacity for backdrop */}
+        <div
+          ref={gameWrapperRef}
+          className="relative rounded-xl shadow-lg flex flex-col overflow-hidden max-w-[900px] w-full h-full max-h-[600px]"
+          style={{
+            backgroundColor: `rgba(255, 255, 255, 0.1)`, // Slightly transparent white overlay over main background
+            boxShadow: `0 0 30px rgba(0, 0, 0, 0.4)`,
+            color: textColor // Default text color
+          }}
+        >
+          {/* Close button for the game modal */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-50 px-4 py-2 rounded-full font-semibold text-sm transition-all duration-200 ease"
+            style={{ backgroundColor: accentColor, color: primaryBg }}
+          >
+            X Close Game
+          </button>
+
+          <div className="game-header p-[15px_20px] rounded-t-[20px] text-center text-[1.5rem] relative z-10"
+               style={{ backgroundColor: accentColor, fontFamily: "'Press Start 2P', cursive", boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)" }}>
+            CYBER SAFARI: KASI YA KOMPYUTA
+          </div>
+          <div className="game-info flex justify-around p-[10px_20px] text-[1.1rem] font-semibold border-b-[2px] z-9"
+               style={{ backgroundColor: borderColor, borderColor: borderColor }}>
+            <div>Alama (Score): <span id="score">{score}</span></div>
+            <div>Muda (Time): <span id="timer">{timeLeft}s</span></div>
+            {gameActive && ( // Show quit button only when game is active
+              <button
+                onClick={handleQuitGame}
+                className="px-4 py-1 rounded-md text-sm font-semibold cursor-pointer transition-all duration-200 ease"
+                style={{ backgroundColor: primaryBg, color: textColor, border: `1px solid ${textColor}` }}
+              >
+                Acha Mchezo (Quit)
+              </button>
+            )}
+          </div>
+          <canvas ref={canvasRef} id="gameCanvas" className="flex-grow block w-full touch-action-none select-none -webkit-tap-highlight-color:transparent"
+                  style={{ backgroundColor: '#87ceeb' }}></canvas>
+          <div className="typing-area p-[15px_20px] rounded-b-[20px] flex flex-col items-center justify-center gap-[10px] z-10"
+               style={{ backgroundColor: accentColor }}>
+            <div ref={wordDisplayRef} id="wordDisplay" className="text-[1.8rem] mb-[10px] whitespace-nowrap overflow-hidden text-ellipsis"
+                 style={{ fontFamily: "'Press Start 2P', cursive", color: textColor, textShadow: "2px 2px #000" }}>READY!</div>
+            <input
+              ref={textInputRef}
+              type="text"
+              id="textInput"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+              onChange={handleInput}
+              disabled={!gameActive}
+              className="w-[80%] max-w-[400px] p-[10px_15px] border-[2px] rounded-[10px] text-[1.2rem] text-center outline-none transition-all duration-200 ease-in-out"
+              style={{
+                borderColor: textColor,
+                backgroundColor: secondaryText, // Using secondaryText for input background
+                color: primaryBg, // Input text color same as primary background for contrast
+              }}
+            />
+          </div>
+
+          {/* Start/Game Over Overlay */}
+          {showOverlay && (
+            <div id="gameOverlay" className={`overlay absolute top-0 left-0 w-full h-full bg-black bg-opacity-70 flex flex-col justify-center items-center text-center z-20 transition-opacity duration-500 ease ${showOverlay ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+              <div className="overlay-content">
+                <h2 id="overlayTitle" className="text-[2.5rem] mb-[20px] text-shadow-[3px_3px_#000]"
+                    style={{ fontFamily: "'Press Start 2P', cursive", color: accentColor }}
+                    dangerouslySetInnerHTML={{ __html: overlayTitle }}
+                ></h2>
+                <p id="overlayMessage" className="text-[1.2rem] mb-[15px] max-w-[80%] mx-auto leading-tight"
+                   style={{ color: textColor }}
+                   dangerouslySetInnerHTML={{ __html: overlayMessage }}
+                ></p>
+                <button
+                  id="startButton"
+                  onClick={() => { initAudio(); startGame(); }}
+                  className="px-[30px] py-[15px] border-none rounded-[10px] text-[1.5rem] font-bold cursor-pointer transition-all duration-300 ease shadow-[0_5px_#367c39] hover:translate-y-[-2px] hover:shadow-[0_7px_#367c39] active:translate-y-[3px] active:shadow-[0_2px_#367c39]"
+                  style={{ backgroundColor: borderColor, color: textColor, fontFamily: "'Press Start 2P', cursive" }}
+                >
+                  {startButtonText}
+                </button>
+              </div>
+            </div>
           )}
         </div>
-        <canvas ref={canvasRef} id="gameCanvas" className="flex-grow block w-full touch-action-none select-none -webkit-tap-highlight-color:transparent"
-                style={{ backgroundColor: '#87ceeb' }}></canvas>
-        <div className="typing-area p-[15px_20px] rounded-b-[20px] flex flex-col items-center justify-center gap-[10px] z-10"
-             style={{ backgroundColor: accentColor }}>
-          <div ref={wordDisplayRef} id="wordDisplay" className="text-[1.8rem] mb-[10px] whitespace-nowrap overflow-hidden text-ellipsis"
-               style={{ fontFamily: "'Press Start 2P', cursive", color: textColor, textShadow: "2px 2px #000" }}>READY!</div>
-          <input
-            ref={textInputRef}
-            type="text"
-            id="textInput"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck="false"
-            onChange={handleInput}
-            disabled={!gameActive}
-            className="w-[80%] max-w-[400px] p-[10px_15px] border-[2px] rounded-[10px] text-[1.2rem] text-center outline-none transition-all duration-200 ease-in-out"
-            style={{
-              borderColor: textColor,
-              backgroundColor: secondaryText, // Using secondaryText for input background
-              color: primaryBg, // Input text color same as primary background for contrast
-            }}
-          />
-        </div>
-
-        {/* Start/Game Over Overlay */}
-        {showOverlay && (
-          <div id="gameOverlay" className={`overlay absolute top-0 left-0 w-full h-full bg-black bg-opacity-70 flex flex-col justify-center items-center text-center z-20 transition-opacity duration-500 ease ${showOverlay ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-            <div className="overlay-content">
-              <h2 id="overlayTitle" className="text-[2.5rem] mb-[20px] text-shadow-[3px_3px_#000]"
-                  style={{ fontFamily: "'Press Start 2P', cursive", color: accentColor }}
-                  dangerouslySetInnerHTML={{ __html: overlayTitle }}
-              ></h2>
-              <p id="overlayMessage" className="text-[1.2rem] mb-[15px] max-w-[80%] mx-auto leading-tight"
-                 style={{ color: textColor }}
-                 dangerouslySetInnerHTML={{ __html: overlayMessage }}
-              ></p>
-              <button
-                id="startButton"
-                onClick={() => { initAudio(); startGame(); }}
-                className="px-[30px] py-[15px] border-none rounded-[10px] text-[1.5rem] font-bold cursor-pointer transition-all duration-300 ease shadow-[0_5px_#367c39] hover:translate-y-[-2px] hover:shadow-[0_7px_#367c39] active:translate-y-[3px] active:shadow-[0_2px_#367c39]"
-                style={{ backgroundColor: borderColor, color: textColor, fontFamily: "'Press Start 2P', cursive" }}
-              >
-                {startButtonText}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
@@ -431,6 +444,8 @@ const CyberSafariGame = ({ themeColors }) => {
 
 // KidsHub Component
 const KidsHub = () => {
+  const [showCyberSafariGame, setShowCyberSafariGame] = useState(false);
+
   // Define theme colors for consistent styling
   const themeColors = {
     primaryBg: '#0A1128',
@@ -459,12 +474,23 @@ const KidsHub = () => {
           <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Creative Design Challenges</h3>
           <p className="text-[#CCD2E3]">Spark imagination through digital art and design.</p>
         </div>
+        {/* New Games Section */}
+        <div
+          className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up cursor-pointer hover:scale-105 transition-transform duration-300"
+          style={{ animationDelay: '0.8s' }}
+          onClick={() => setShowCyberSafariGame(true)}
+        >
+          {/* Using a placeholder for a game icon, you can replace with a real one */}
+          <img src="https://placehold.co/100x100/0A1128/C9B072?text=PLAY" alt="Fun Games" className="mb-4 rounded-full p-2" />
+          <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Fun Games</h3>
+          <p className="text-[#CCD2E3]">Enjoy engaging and interactive games!</p>
+        </div>
       </div>
 
-      {/* Game Section */}
-      <div className="w-full max-w-3xl mt-8">
-        <CyberSafariGame themeColors={themeColors} />
-      </div>
+      {/* Cyber Safari Game as a Conditional Overlay */}
+      {showCyberSafariGame && (
+        <CyberSafariGame themeColors={themeColors} onClose={() => setShowCyberSafariGame(false)} />
+      )}
 
       <button onClick={() => window.history.back()} className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
         Back to Home
