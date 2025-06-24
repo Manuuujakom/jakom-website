@@ -1,34 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import './TypingGame.css';
 import debounce from 'lodash.debounce'; // Import debounce utility
 
 // --- Game Words and Phrases ---
 const GAME_DURATION = 60; // seconds
-const VEHICLE_WIDTH = 80; // Defined as a constant for consistent access
-const VEHICLE_HEIGHT = 50; // Also define vehicle height as a constant
-
-// Removed the static 'words' array. We will fetch words dynamically.
-// const words = [
-//     "Keyboard", "Mouse", "Monitor", "CPU", "RAM", "ROM", "Software", "Hardware",
-//     "Browser", "Internet", "Wi-Fi", "Ethernet", "Firewall", "Virus", "Antivirus",
-//     "Backup", "Cloud", "Server", "Network", "Byte", "Bit", "Pixel", "Resolution",
-//     "USB", "HDMI", "Bluetooth", "Code", "Program", "Algorithm", "Loop", "Variable",
-//     "Function", "Debug", "HTML", "CSS", "JavaScript", "Database", "Security",
-//     "Processor", "Storage", "Application", "Website", "Domain", "Hosting",
-//     "Encryption", "Malware", "Phishing", "Spam", "Firewall", "Router",
-//     "Modem", "Gigabyte", "Megabyte", "Kilobyte", "TeraByte", "Output", "Input",
-//     "Array", "Object", "Boolean", "String", "Integer", "Float", "Syntax", "Error"
-// ];
+const VEHICLE_WIDTH = 70; // Slightly smaller vehicle width
+const VEHICLE_HEIGHT = 45; // Slightly smaller vehicle height
 
 const swahiliPhrases = {
     welcomeTitle: "KARIBU CYBER SAFARI!",
     welcomeMessage: `Jitayarishe kuongeza kasi ya kuandika na ujuzi wako wa kompyuta! Andika maneno ya teknolojia unapoona,
-                     kusaidia gari lako la safari kusonga mbele. Kila neno sahihi huongeza alama zako na kukusogeza mbele.
-                     Haraka haraka, na usikose herufi!
-                     <br><br>
-                     (Get ready to boost your typing speed and computer skills! Type the tech words you see,
-                     to help your safari vehicle move forward. Every correct word boosts your score and moves you ahead.
-                     Faster faster, and don't miss a letter!)`,
+                    kusaidia gari lako la safari kusonga mbele. Kila neno sahihi huongeza alama zako na kukusogeza mbele.
+                    Haraka haraka, na usikose herufi!
+                    <br><br>
+                    (Get ready to boost your typing speed and computer skills! Type the tech words you see,
+                    to help your safari vehicle move forward. Every correct word boosts your score and moves you ahead.
+                    Faster faster, and don't miss a letter!)`,
     startButton: "ANZA MCHEZO! (Start Game!)",
     goodJob: ["Kazi Nzuri!", "Heko!", "Vizuri Sana!", "Endelea!"],
     faster: ["Haraka haraka!", "Ongeza Kasi!", "Usisahau herufi!"],
@@ -40,16 +26,16 @@ const swahiliPhrases = {
 
 // --- GameHeader Component ---
 const GameHeader = () => (
-    <div className="game-header">
+    <div className="text-4xl font-bold text-white text-center py-4 bg-gradient-to-r from-yellow-600 to-orange-500 rounded-lg shadow-lg mb-4">
         CYBER SAFARI: KASI YA KOMPUTA
     </div>
 );
 
 // --- GameInfo Component ---
 const GameInfo = ({ score, timeLeft }) => (
-    <div className="game-info">
-        <div>Alama (Score): <span>{score}</span></div>
-        <div>Muda (Time): <span>{timeLeft}</span>s</div>
+    <div className="flex justify-around items-center w-full max-w-md mx-auto bg-gray-800 text-white p-4 rounded-lg shadow-md mb-4 text-xl font-semibold border-2 border-yellow-500">
+        <div>Alama (Score): <span className="text-yellow-400">{score}</span></div>
+        <div>Muda (Time): <span className="text-yellow-400">{timeLeft}</span>s</div>
     </div>
 );
 
@@ -62,31 +48,38 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
+        // Set canvas dimensions based on its actual rendered size (from CSS)
+        // This should always be done at the start of the draw function
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
         const groundLevel = canvas.height * 0.8;
-        const vehicleY = groundLevel - VEHICLE_HEIGHT;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Draw sky
-        ctx.fillStyle = '#87ceeb';
+        // Draw sky - Gradient for a nicer sky
+        const skyGradient = ctx.createLinearGradient(0, 0, 0, groundLevel);
+        skyGradient.addColorStop(0, '#87ceeb'); // Light blue at top
+        skyGradient.addColorStop(1, '#6a5acd'); // Slightly deeper blue towards horizon
+        ctx.fillStyle = skyGradient;
         ctx.fillRect(0, 0, canvas.width, groundLevel);
 
-        // Draw ground (dirt)
-        ctx.fillStyle = '#a0522d';
+        // Draw ground (dirt road)
+        ctx.fillStyle = '#a0522d'; // Sienna / Rust color for dirt
         ctx.fillRect(0, groundLevel, canvas.width, canvas.height - groundLevel);
 
-        // Draw grass on the ground
-        ctx.fillStyle = '#367c39';
+        // Draw main grass strip on the ground
+        ctx.fillStyle = '#228B22'; // Forest green
         ctx.fillRect(0, groundLevel, canvas.width, 10);
 
         // Draw simple sun
-        ctx.fillStyle = '#ffd700';
+        ctx.fillStyle = '#ffd700'; // Gold color
         ctx.beginPath();
         ctx.arc(canvas.width - 70, 70, 40, 0, Math.PI * 2);
         ctx.fill();
 
         // Draw simple clouds
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; // White with some transparency
         ctx.beginPath();
         ctx.arc(150, 80, 30, 0, Math.PI * 2);
         ctx.arc(190, 80, 25, 0, Math.PI * 2);
@@ -99,23 +92,95 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
         ctx.arc(canvas.width - 230, 80, 18, 0, Math.PI * 2);
         ctx.fill();
 
-        // Draw safari vehicle (simple rectangle with wheels)
-        ctx.fillStyle = '#b03a2e';
-        ctx.fillRect(vehicleX, vehicleY, VEHICLE_WIDTH, VEHICLE_HEIGHT);
-        // Wheels
-        ctx.fillStyle = '#333';
+        // --- Draw Road Features ---
+
+        // Draw small patches of dark green grass (more varied)
+        ctx.fillStyle = '#006400'; // Dark green
+        const grassPatchHeight = 15;
+        const grassPatchWidth = 20;
+        const grassOffset = 5;
+        for (let i = 0; i < canvas.width; i += 70) { // Draw grass every 70 pixels
+            ctx.beginPath();
+            ctx.moveTo(i, groundLevel - grassPatchHeight + grassOffset);
+            ctx.lineTo(i + grassPatchWidth / 2, groundLevel + grassOffset);
+            ctx.lineTo(i + grassPatchWidth, groundLevel - grassPatchHeight + grassOffset);
+            ctx.fill();
+        }
+
+        // Draw simple signpost
+        const signPostX = canvas.width - 150;
+        const signPostY = groundLevel - 80;
+        const signPostWidth = 10;
+        const signPostHeight = 70;
+        const signWidth = 60;
+        const signHeight = 30;
+
+        // Signpost pole (brown)
+        ctx.fillStyle = '#8B4513'; // SaddleBrown
+        ctx.fillRect(signPostX, signPostY, signPostWidth, signPostHeight);
+
+        // Sign itself (light beige)
+        ctx.fillStyle = '#F5F5DC'; // Beige
+        ctx.fillRect(signPostX - (signWidth - signPostWidth) / 2, signPostY - signHeight, signWidth, signHeight);
+        ctx.strokeStyle = '#333'; // Dark border for sign
+        ctx.lineWidth = 2;
+        ctx.strokeRect(signPostX - (signWidth - signPostWidth) / 2, signPostY - signHeight, signWidth, signHeight);
+        
+        // Add text to sign (optional, can be dynamic)
+        ctx.fillStyle = '#000';
+        ctx.font = '12px "Press Start 2P", cursive'; // Smaller font for sign
+        ctx.textAlign = 'center';
+        ctx.fillText("SAFARI", signPostX + signPostWidth / 2, signPostY - signHeight + 20); // Center text on sign
+
+        // Draw Safari Vehicle
+        const vehicleY = groundLevel - VEHICLE_HEIGHT - 5; // Adjust Y for a slightly lifted look
+
+        // Vehicle body (reddish-brown)
+        ctx.fillStyle = '#8B0000'; // DarkRed, a nice reddish-brown
         ctx.beginPath();
-        ctx.arc(vehicleX + 20, groundLevel - 10, 10, 0, Math.PI * 2);
-        ctx.arc(vehicleX + VEHICLE_WIDTH - 20, groundLevel - 10, 10, 0, Math.PI * 2);
+        ctx.roundRect(vehicleX, vehicleY, VEHICLE_WIDTH, VEHICLE_HEIGHT, 8); // Rounded corners
         ctx.fill();
-    }, [vehicleX]);
+        ctx.strokeStyle = '#333'; // Border for the vehicle
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Vehicle roof (light beige)
+        ctx.fillStyle = '#F5F5DC'; // Beige
+        ctx.beginPath();
+        ctx.roundRect(vehicleX + 5, vehicleY - 15, VEHICLE_WIDTH - 10, 20, 5); // Smaller, rounded roof
+        ctx.fill();
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Wheels (dark gray)
+        ctx.fillStyle = '#333';
+        const wheelRadius = 8; // Slightly smaller wheels
+        ctx.beginPath();
+        ctx.arc(vehicleX + wheelRadius + 5, groundLevel - wheelRadius - 2, wheelRadius, 0, Math.PI * 2); // Front wheel
+        ctx.arc(vehicleX + VEHICLE_WIDTH - wheelRadius - 5, groundLevel - wheelRadius - 2, wheelRadius, 0, Math.PI * 2); // Rear wheel
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Headlights (small yellow circles)
+        ctx.fillStyle = '#FFFF00'; // Yellow
+        ctx.beginPath();
+        ctx.arc(vehicleX + VEHICLE_WIDTH - 5, vehicleY + 15, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(vehicleX + VEHICLE_WIDTH - 5, vehicleY + VEHICLE_HEIGHT - 15, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+    }, [vehicleX]); // vehicleX is a dependency for drawGame
 
     // Debounce the drawGame function for ResizeObserver
     const debouncedDrawGame = useCallback(
         debounce(() => {
             drawGame();
         }, 50), // Adjust debounce time as needed (e.g., 50ms to 200ms)
-        [drawGame]
+        [drawGame] // drawGame is a stable dependency here
     );
 
     // This effect handles initial sizing and redraws on resize
@@ -124,17 +189,24 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
         if (!canvas) return; // Ensure canvas is available before observing
 
         const resizeObserver = new ResizeObserver(() => {
+            // Simply call the debounced drawing function.
+            // drawGame itself will handle setting canvas.width/height to match offsetWidth/offsetHeight.
             debouncedDrawGame();
         });
 
         resizeObserver.observe(canvas);
 
+        // Initial draw: Ensure canvas dimensions are set correctly on mount
+        // and then draw the initial scene.
+        if (canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
+            drawGame(); // Call drawGame directly for the first render
+        }
+
         return () => {
             resizeObserver.disconnect();
             debouncedDrawGame.cancel();
         };
-    }, [debouncedDrawGame]);
-
+    }, [debouncedDrawGame, drawGame]); // Dependencies include debouncedDrawGame and drawGame
 
     // This effect handles the animation loop
     useEffect(() => {
@@ -151,23 +223,30 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
         }
 
         return () => cancelAnimationFrame(animationFrameId);
-    }, [gameActive, drawGame]);
+    }, [gameActive, drawGame]); // Dependencies for animation loop
 
-    return <canvas id="gameCanvas" ref={canvasRef}></canvas>;
+    return (
+        <canvas
+            id="gameCanvas"
+            ref={canvasRef}
+            className="w-full h-80 bg-gray-200 rounded-lg shadow-inner border-2 border-gray-600"
+            style={{ fontFamily: "'Press Start 2P', cursive" }} // Apply font for canvas text
+        ></canvas>
+    );
 });
 
 // --- TypingArea Component ---
-const TypingArea = React.memo(({ currentWord, typedInput, handleInput, gameActive }) => {
+const TypingArea = React.memo(({ currentWord, typedInput, handleInput, gameActive, isLoadingWord }) => {
     const highlightIncorrectLetters = useCallback(() => {
         const displayedWord = currentWord;
         let highlightedHtml = '';
         for (let i = 0; i < displayedWord.length; i++) {
             if (typedInput[i] && typedInput[i].toLowerCase() === displayedWord[i].toLowerCase()) {
-                highlightedHtml += `<span style="color: yellow;">${displayedWord[i]}</span>`;
+                highlightedHtml += `<span class="text-yellow-400">${displayedWord[i]}</span>`;
             } else if (typedInput[i]) {
-                highlightedHtml += `<span style="color: red;">${displayedWord[i]}</span>`;
+                highlightedHtml += `<span class="text-red-500">${displayedWord[i]}</span>`;
             } else {
-                highlightedHtml += `<span>${displayedWord[i]}</span>`;
+                highlightedHtml += `<span class="text-gray-300">${displayedWord[i]}</span>`;
             }
         }
         return { __html: highlightedHtml };
@@ -177,38 +256,68 @@ const TypingArea = React.memo(({ currentWord, typedInput, handleInput, gameActiv
 
     // Focus input when game starts or word changes
     useEffect(() => {
-        if (gameActive && inputRef.current) {
+        if (gameActive && !isLoadingWord && inputRef.current) {
             inputRef.current.focus();
         }
-    }, [gameActive, currentWord]);
+    }, [gameActive, currentWord, isLoadingWord]);
 
 
     return (
-        <div className="typing-area">
-            <div id="wordDisplay" dangerouslySetInnerHTML={highlightIncorrectLetters()}></div>
-            <input
-                type="text"
-                id="textInput"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck="false"
-                value={typedInput}
-                onChange={handleInput}
-                disabled={!gameActive}
-                ref={inputRef}
-            />
+        <div className="flex flex-col items-center p-4 bg-gray-800 rounded-lg shadow-md mt-4">
+            {isLoadingWord ? (
+                <div className="text-xl text-yellow-300 font-semibold mb-4 animate-pulse">
+                    Inapakia neno... (Loading word...)
+                </div>
+            ) : (
+                <>
+                    <div
+                        id="wordDisplay"
+                        className="text-4xl font-bold mb-4 tracking-wider"
+                        dangerouslySetInnerHTML={highlightIncorrectLetters()}
+                    ></div>
+                    <input
+                        type="text"
+                        id="textInput"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="off"
+                        spellCheck="false"
+                        value={typedInput}
+                        onChange={handleInput}
+                        disabled={!gameActive || isLoadingWord}
+                        ref={inputRef}
+                        className="w-full max-w-md p-3 text-2xl text-center bg-gray-700 text-white rounded-lg border-2 border-yellow-500 focus:outline-none focus:border-yellow-300 transition-all duration-200"
+                    />
+                </>
+            )}
         </div>
     );
 });
 
 // --- GameOverlay Component ---
 const GameOverlay = ({ isActive, title, message, buttonText, onStartGame }) => (
-    <div id="gameOverlay" className={`overlay ${isActive ? 'active' : ''}`}>
-        <div className="overlay-content">
-            <h2 id="overlayTitle">{title}</h2>
-            <p id="overlayMessage" dangerouslySetInnerHTML={{ __html: message }}></p>
-            <button id="startButton" onClick={onStartGame}>{buttonText}</button>
+    <div
+        id="gameOverlay"
+        className={`fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-500 ${
+            isActive ? 'opacity-100 visible' : 'opacity-0 invisible'
+        }`}
+    >
+        <div className="bg-gray-900 border-4 border-yellow-500 rounded-lg shadow-xl p-8 text-center max-w-lg mx-auto">
+            <h2 id="overlayTitle" className="text-yellow-400 text-5xl font-extrabold mb-4 animate-bounce-slow">
+                {title}
+            </h2>
+            <p
+                id="overlayMessage"
+                className="text-white text-lg mb-8 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: message }}
+            ></p>
+            <button
+                id="startButton"
+                onClick={onStartGame}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-full text-2xl uppercase shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50"
+            >
+                {buttonText}
+            </button>
         </div>
     </div>
 );
@@ -277,24 +386,39 @@ function TypingGame() {
     const fetchRandomWord = useCallback(async () => {
         setIsLoadingWord(true); // Set loading state
         try {
-            // You can adjust the length parameter if the API supports it.
-            // For example: `https://random-word-api.herokuapp.com/word?length=5` for 5-letter words
-            const response = await fetch('https://random-word-api.herokuapp.com/word');
+            // Using a different API for tech-related words, or a generic one.
+            // random-word-api.herokuapp.com is general, let's use a list of tech words as fallback
+            const response = await fetch('https://random-word-api.herokuapp.com/word?number=1');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            // The API returns an array, usually with one word: ["example"]
+            
             if (data && data.length > 0) {
                 setCurrentWord(data[0]);
             } else {
-                // Fallback if API returns empty array or unexpected data
-                console.warn('API returned no words. Using fallback word.');
-                setCurrentWord("fallback"); // A simple fallback
+                // Fallback to a hardcoded list if API fails or returns no words
+                console.warn('API returned no words. Using fallback tech words.');
+                const fallbackWords = [
+                    "algorithm", "backend", "cloud", "database", "encryption",
+                    "frontend", "framework", "internet", "javascript", "keyboard",
+                    "malware", "network", "protocol", "security", "server",
+                    "software", "storage", "terminal", "website", "wireless"
+                ];
+                const randomIndex = Math.floor(Math.random() * fallbackWords.length);
+                setCurrentWord(fallbackWords[randomIndex]);
             }
         } catch (error) {
             console.error("Failed to fetch word:", error);
-            setCurrentWord("error"); // Show an error word or handle gracefully
+            // Fallback to a hardcoded list on error
+            const fallbackWords = [
+                "algorithm", "backend", "cloud", "database", "encryption",
+                "frontend", "framework", "internet", "javascript", "keyboard",
+                "malware", "network", "protocol", "security", "server",
+                "software", "storage", "terminal", "website", "wireless"
+            ];
+            const randomIndex = Math.floor(Math.random() * fallbackWords.length);
+            setCurrentWord(fallbackWords[randomIndex]);
         } finally {
             setIsLoadingWord(false); // Clear loading state
             setTypedInput(''); // Clear input for the new word
@@ -356,11 +480,10 @@ function TypingGame() {
             fetchRandomWord(); // Fetch a new word
         } else if (typedText.length >= currentWord.length) {
             // If the typed text is as long as the word but incorrect,
-            // you might want to penalize or simply not advance.
-            // For now, let's just clear the input and get a new word (with no score).
-            // showTemporaryMessage(swahiliPhrases.wrongLetter, 'orange'); // Optional: show a "wrong" message
-            // setTypedInput('');
-            // fetchRandomWord();
+            // for now, we just clear the input and get a new word (no score penalty)
+            setTypedInput('');
+            showTemporaryMessage(swahiliPhrases.wrongLetter, 'orange');
+            fetchRandomWord();
         }
     }, [gameActive, currentWord, playCorrectSound, fetchRandomWord, showTemporaryMessage, isLoadingWord]); // Added isLoadingWord to dependencies
 
@@ -380,7 +503,7 @@ function TypingGame() {
         setOverlayActive(true);
         setOverlayTitle(swahiliPhrases.gameOver);
         setOverlayMessage(`Alama zako ni: <span style="color:#ffd700; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!<br><br>
-                         (Your Score: <span style="color:#ffd700; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!)`);
+                            (Your Score: <span style="color:#ffd700; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!)`);
         setStartButtonText(swahiliPhrases.playAgain);
         playTimeUpSound();
     }, [score, playTimeUpSound]);
@@ -405,22 +528,40 @@ function TypingGame() {
     }, [gameActive, endGame]);
 
     return (
-        <div className="typing-game-wrapper">
+        <div className="relative flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-700 to-gray-900 p-4 font-inter">
+            {/* Added a link for the custom font, assuming it's available or will be linked in the parent HTML */}
+            <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+            <style>
+                {`
+                body {
+                    font-family: 'Inter', sans-serif;
+                }
+                .font-press-start {
+                    font-family: 'Press Start 2P', cursive;
+                }
+                @keyframes bounce-slow {
+                    0%, 100% {
+                        transform: translateY(0);
+                    }
+                    50% {
+                        transform: translateY(-10px);
+                    }
+                }
+                .animate-bounce-slow {
+                    animation: bounce-slow 2s infinite ease-in-out;
+                }
+                `}
+            </style>
             <GameHeader />
             <GameInfo score={score} timeLeft={timeLeft} />
             <GameCanvas gameActive={gameActive} vehicleX={vehicleX} />
-            {isLoadingWord ? ( // Show a loading message when fetching a word
-                <div className="typing-area loading-word-message">
-                    Inapakia neno... (Loading word...)
-                </div>
-            ) : (
-                <TypingArea
-                    currentWord={currentWord}
-                    typedInput={typedInput}
-                    handleInput={handleInput}
-                    gameActive={gameActive}
-                />
-            )}
+            <TypingArea
+                currentWord={currentWord}
+                typedInput={typedInput}
+                handleInput={handleInput}
+                gameActive={gameActive}
+                isLoadingWord={isLoadingWord} // Pass isLoadingWord to TypingArea
+            />
             <GameOverlay
                 isActive={overlayActive}
                 title={overlayTitle}
