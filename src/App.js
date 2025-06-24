@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Import routing components: BrowserRouter (aliased as Router), Routes, and Route, Link
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'; // Fixed typo: 'react-router-router-dom' -> 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, Home, Mail, Phone, MessageSquare, Smartphone } from 'lucide-react';
 
 // --- Import your actual page components from the src/pages directory ---
-// These imports are crucial to ensure App.js renders the content from those specific files.
-// Ensure each of these files (e.g., src/pages/GraphicsDesign.js) exports its component as 'default'.
+// IMPORTANT: Ensure these files (e.g., src/pages/GraphicsDesign.js) exist in your project
+// and that each exports its component as 'default'. The errors indicate these files
+// might be missing or have incorrect names/paths in your project structure.
 import GraphicsDesignPage from './pages/GraphicsDesign'; 
 import DataAnalysisPage from './pages/DataAnalysis';     
 import AccountingBookkeepingPage from './pages/AccountingBookkeeping'; 
@@ -176,8 +177,8 @@ const App = () => {
             justify-content: center;
             align-items: center;
             text-align: center;
-            /* Allow content to scroll within this section if it exceeds min-height */
-            overflow-y: auto; /* Allow vertical scrolling if content is too tall */
+            /* Prevent vertical scrolling within this section */
+            overflow-y: hidden; /* Changed from 'auto' to 'hidden' to remove scrollbar */
             -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
           }
 
