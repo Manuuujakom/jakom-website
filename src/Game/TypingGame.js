@@ -61,15 +61,10 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
-        const parent = canvas.parentElement;
-        if (parent) {
-            // ONLY update width/height if they have actually changed
-            // This is crucial to prevent unnecessary layout recalculations and potential ResizeObserver loops
-            if (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
-                canvas.width = parent.clientWidth;
-                canvas.height = parent.clientHeight;
-            }
-        }
+        // Removed the direct width/height manipulation.
+        // The canvas size should be controlled by CSS (width: 100%, height: 100%)
+        // The current canvas.width/height will reflect the actual rendered size
+        // which is set by its parent (via CSS).
 
         const groundLevel = canvas.height * 0.8;
         const vehicleY = groundLevel - VEHICLE_HEIGHT;
@@ -133,13 +128,16 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
         if (!canvas) return; // Ensure canvas is available before observing
 
         const resizeObserver = new ResizeObserver(() => {
-            debouncedDrawGame(); // Call the debounced version here
+            // No need to set canvas width/height here directly, CSS handles it.
+            // Just redraw to update internal canvas drawing dimensions.
+            debouncedDrawGame();
         });
 
-        // Only observe if the canvas and its parent exist
-        if (canvas.parentElement) {
-            resizeObserver.observe(canvas.parentElement);
-        }
+        // Observe the canvas element itself (it's the one whose dimensions might change via CSS)
+        // Or its parent if you want the parent's size changes to trigger redraw.
+        // Observing the canvas directly is usually safer for an element that fills its parent.
+        resizeObserver.observe(canvas);
+
 
         return () => {
             // Disconnect observer on unmount
@@ -154,9 +152,6 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
     useEffect(() => {
         let animationFrameId;
         const animate = () => {
-            // The animation loop directly calls drawGame for smooth updates.
-            // The conditional width/height update inside drawGame helps prevent
-            // unnecessary layout recalculations even on every frame.
             drawGame();
             animationFrameId = requestAnimationFrame(animate);
         };
@@ -164,12 +159,11 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
         if (gameActive) {
             animate();
         } else {
-            // Ensure any pending animation frame is cancelled when game becomes inactive
             cancelAnimationFrame(animationFrameId);
         }
 
         return () => cancelAnimationFrame(animationFrameId);
-    }, [gameActive, drawGame]); // Keep drawGame here for animation loop dependencies
+    }, [gameActive, drawGame]);
 
     return <canvas id="gameCanvas" ref={canvasRef}></canvas>;
 });
@@ -273,6 +267,24 @@ function TypingGame() {
         oscillator.stop(audioContextRef.current.currentTime + 0.15);
     }, []);
 
+    const playTimeUpSound = useCallback(() => {
+        if (!audioContextRef.current) return;
+        const oscillator = audioContextRef.current.createOscillator();
+        const gainNode = audioContextRef.current.createGain();
+
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(120, audioContextRef.current.currentTime);
+        gainNode.gain.setValueAtTime(0.8, audioContextRef.current.currentTime);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContextRef.current.destination);
+
+        oscillator.start();
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.5);
+        oscillator.stop(audioContextRef.current.currentTime + 0.5);
+    }, []);
+
+
     const getRandomWord = useCallback(() => {
         const randomIndex = Math.floor(Math.random() * words.length);
         setCurrentWord(words[randomIndex]);
@@ -280,7 +292,6 @@ function TypingGame() {
     }, []);
 
     const showTemporaryMessage = useCallback((message, color) => {
-        // Find the game-wrapper to append the message to
         const gameWrapper = document.querySelector('.typing-game-wrapper');
         if (!gameWrapper) return;
 
@@ -323,8 +334,7 @@ function TypingGame() {
                 const canvas = document.getElementById('gameCanvas');
                 if (canvas) {
                     const newX = prevX + 20;
-                    // Use the global VEHICLE_WIDTH constant here
-                    return Math.min(newX, canvas.width - VEHICLE_WIDTH - 50); // canvas.width - VEHICLE_WIDTH - padding
+                    return Math.min(newX, canvas.width - VEHICLE_WIDTH - 50);
                 }
                 return prevX;
             });
@@ -338,7 +348,7 @@ function TypingGame() {
         initAudio();
         setScore(0);
         setTimeLeft(GAME_DURATION);
-        setVehicleX(50); // Reset vehicle position
+        setVehicleX(50);
         setGameActive(true);
         setOverlayActive(false);
         getRandomWord();
@@ -352,7 +362,8 @@ function TypingGame() {
         setOverlayMessage(`Alama zako ni: <span style="color:#ffd700; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!<br><br>
                          (Your Score: <span style="color:#ffd700; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!)`);
         setStartButtonText(swahiliPhrases.playAgain);
-    }, [score]);
+        playTimeUpSound();
+    }, [score, playTimeUpSound]);
 
     // Timer effect
     useEffect(() => {

@@ -5,40 +5,23 @@
     border-radius: 15px; /* Adjust as needed for card fit */
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.4); /* Softer shadow for card */
 
-    /* --- BEGIN CORRECTIONS FOR SIZE AND CENTERING --- */
-    /*
-     * Use responsive width and height based on viewport, with max limits.
-     * Add percentage-based margins for dynamic spacing from edges.
-     */
-    width: 90vw; /* 90% of viewport width */
-    max-width: 900px; /* Maximum width for larger screens */
-    height: 85vh; /* 85% of viewport height */
-    max-height: 600px; /* Maximum height for larger screens */
+    /* --- BEGIN ADJUSTMENTS FOR SMALLER WIDGET SIZE --- */
+    width: 600vw; /* Slightly reduced from 90vw */
+    max-width: 800px; /* Slightly reduced from 900px */
+    height: 300vh; /* Slightly reduced from 85vh */
+    max-height: 650px; /* Slightly reduced from 600px */
     aspect-ratio: 16 / 9; /* Maintain a specific aspect ratio for the game area */
+    /* --- END ADJUSTMENTS --- */
 
     /* Responsive margins - 2.5vw horizontally, 2.5vh vertically */
-    /* This creates a dynamic border around the game, relative to viewport size */
     margin: 2.5vh 2.5vw;
 
-    /* If you prefer to center it AND have dynamic margins (margin: auto does not work with % margins consistently) */
-    /* An alternative if its parent is flex/grid and you want it strictly centered: */
-    /*
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    */
-    /* But the percentage margins are generally simpler for just keeping it within bounds. */
-
-
-    /* --- END CORRECTIONS --- */
-
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* This is essential for stacking children */
     overflow: hidden; /* Important for canvas and internal layout */
-    position: relative;
+    position: relative; /* Essential for overlay's absolute positioning to work within it */
     border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
-    color: #fff; /* Default text color for the wrapper */
+    color: #f0f0f0; /* Slightly off-white for main game content text - adjust if needed for clarity */
     font-family: 'Inter', sans-serif; /* Keep font family here */
 }
 
@@ -46,36 +29,65 @@
 .game-header {
     background-color: #4CAF50; /* Vibrant green header */
     background-image: linear-gradient(to right, #4CAF50, #8bc34a); /* Green gradient */
-    padding: 15px 20px;
-    border-top-left-radius: 14px; /* Match wrapper border-radius - 1px */
+    padding: 8px 20px;
+    font-size: 1.2rem;
+    border-top-left-radius: 14px;
     border-top-right-radius: 14px;
     text-align: center;
     font-family: 'Press Start 2P', cursive;
-    font-size: 1.5rem; /* Larger font for title */
-    color: #fff;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    color: #FFEB3B; /* Bright yellow for strong contrast */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     position: relative;
     z-index: 10;
-    flex-shrink: 0; /* Prevent header from shrinking */
+    flex-shrink: 0; /* Prevents shrinking */
+    /* Add a fixed height or min-height here if its content doesn't define it well enough */
+    height: 50px; /* Example: Give header a fixed height if needed */
+    display: flex; /* Ensure content is centered if height is fixed */
+    align-items: center;
+    justify-content: center;
 }
 
 /* Game Info Bar (Score, Timer) */
 .game-info {
     display: flex;
     justify-content: space-around;
-    padding: 10px 15px;
+    /* --- CRITICAL REVISION: Adjust padding and set a fixed height for the info bar --- */
+    padding: 10px 15px; /* Adjusted padding to be less aggressive */
+    height: 10px; /* Set a fixed height that ensures visibility */
+    /* If content inside requires more height, increase this value or use min-height with careful testing. */
+
     background-color: #2196F3; /* Blue for info bar */
     background-image: linear-gradient(to right, #2196F3, #03a9f4); /* Blue gradient */
-    font-size: 1rem;
+    /* --- REMOVE TEMPORARY DEBUGGING AID ONCE FIXED --- */
+    /* border: 8px dashed yellow !important; */
+    /* --- END TEMPORARY DEBUGGING AID --- */
     font-weight: 700;
     border-bottom: 1px solid #1976D2;
+    color: #fff; /* Keep labels white. */
+    position: relative;
     z-index: 9;
-    color: #fff;
-    flex-shrink: 0; /* Prevent info bar from shrinking */
+    flex-shrink: 0; /* Prevents shrinking */
+    align-items: center; /* Vertically center content */
+}
+
+/* Responsive adjustments for game-info - adjust these with the new fixed height in mind */
+@media (max-width: 768px) {
+    .game-info {
+        font-size: 1.3rem;
+        padding: 8px 10px; /* Adjusted padding */
+        height: 60px; /* Adjusted height for smaller screens */
+    }
+}
+@media (max-width: 480px) {
+    .game-info {
+        font-size: 1.2rem;
+        padding: 5px 8px; /* Adjusted padding */
+        height: 50px; /* Adjusted height for very small screens */
+    }
 }
 .game-info span {
-    color: #FFEB3B;
+    color: #FFEB3B; /* Keep values yellow - good contrast with blue */
     margin-left: 5px;
 }
 
@@ -85,9 +97,12 @@
     background-color: #87ceeb; /* Sky blue */
     display: block; /* Important for canvas to render correctly */
     width: 100%; /* Ensure it fills the width of its flex parent */
+    height: 100%; /* Ensure it fills the height of its flex parent */
     touch-action: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+    position: relative;
+    z-index: 1;
 }
 
 /* Typing Input Area */
@@ -102,9 +117,12 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
+    position: relative;
     z-index: 10;
     box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.2);
-    flex-shrink: 0; /* Prevent typing area from shrinking */
+    flex-shrink: 0; /* Prevents shrinking */
+    /* Add a fixed height or min-height here if its content doesn't define it well enough */
+    height: 150px; /* Example: Give typing area a fixed height */
 }
 
 #wordDisplay {
@@ -230,56 +248,4 @@
 .overlay-content button:active {
     transform: translateY(1px);
     box-shadow: 0 2px #367c39;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .game-header {
-        font-size: 1.2rem;
-        padding: 10px 15px;
-    }
-    .game-info {
-        font-size: 0.9rem;
-        padding: 8px 10px;
-    }
-    #wordDisplay {
-        font-size: 1.4rem;
-    }
-    #textInput {
-        font-size: 1rem;
-        padding: 8px 10px;
-    }
-    .overlay-content h2 {
-        font-size: 1.5rem;
-    }
-    .overlay-content p {
-        font-size: 0.9rem;
-    }
-    .overlay-content button {
-        font-size: 1.1rem;
-        padding: 10px 20px;
-    }
-}
-@media (max-width: 480px) {
-    .game-header {
-        font-size: 1rem;
-    }
-    .game-info {
-        font-size: 0.8rem;
-    }
-    #wordDisplay {
-        font-size: 1.2rem;
-    }
-    #textInput {
-        font-size: 0.8rem;
-    }
-    .overlay-content h2 {
-        font-size: 1.2rem;
-    }
-    .overlay-content p {
-        font-size: 0.8rem;
-    }
-    .overlay-content button {
-        font-size: 1rem;
-    }
 }
