@@ -318,78 +318,82 @@ const CyberSafariGame = ({ themeColors }) => {
   }, [gameActive, gameLoop]);
 
   return (
-    // Load Press Start 2P and Inter fonts (if not already loaded by parent app)
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    // React components must return a single root element.
+    // The <link> tag was a sibling to the main <div>, causing the error.
+    // Wrap them in a React Fragment to resolve this.
+    <>
+      <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 
-    <div
-      ref={gameWrapperRef}
-      className="relative rounded-xl shadow-lg flex flex-col overflow-hidden max-w-[900px] w-[95vw] h-[95vh] max-h-[600px]"
-      style={{
-        backgroundColor: `rgba(255, 255, 255, 0.1)`, // Slightly transparent white overlay over main background
-        boxShadow: `0 0 30px rgba(0, 0, 0, 0.4)`,
-        color: textColor // Default text color
-      }}
-    >
-      <div className="game-header p-[15px_20px] rounded-t-[20px] text-center text-[1.5rem] relative z-10"
-           style={{ backgroundColor: accentColor, fontFamily: "'Press Start 2P', cursive", boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)" }}>
-        CYBER SAFARI: KASI YA KOMPYUTA
-      </div>
-      <div className="game-info flex justify-around p-[10px_20px] text-[1.1rem] font-semibold border-b-[2px] z-9"
-           style={{ backgroundColor: borderColor, borderColor: borderColor }}>
-        <div>Alama (Score): <span id="score">{score}</span></div>
-        <div>Muda (Time): <span id="timer">{timeLeft}s</span></div>
-      </div>
-      <canvas ref={canvasRef} id="gameCanvas" className="flex-grow block w-full touch-action-none select-none -webkit-tap-highlight-color:transparent"
-              style={{ backgroundColor: '#87ceeb' }}></canvas>
-      <div className="typing-area p-[15px_20px] rounded-b-[20px] flex flex-col items-center justify-center gap-[10px] z-10"
-           style={{ backgroundColor: accentColor }}>
-        <div ref={wordDisplayRef} id="wordDisplay" className="text-[1.8rem] mb-[10px] whitespace-nowrap overflow-hidden text-ellipsis"
-             style={{ fontFamily: "'Press Start 2P', cursive", color: textColor, textShadow: "2px 2px #000" }}>READY!</div>
-        <input
-          ref={textInputRef}
-          type="text"
-          id="textInput"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck="false"
-          onChange={handleInput}
-          disabled={!gameActive}
-          className="w-[80%] max-w-[400px] p-[10px_15px] border-[2px] rounded-[10px] text-[1.2rem] text-center outline-none transition-all duration-200 ease-in-out"
-          style={{
-            borderColor: textColor,
-            backgroundColor: secondaryText, // Using secondaryText for input background
-            color: primaryBg, // Input text color same as primary background for contrast
-            // Focus style is handled by Tailwind's focus:ring if enabled globally, or could be inlined
-            // For now, retaining a similar visual effect with specific border color on focus if needed
-          }}
-        />
-      </div>
-
-      {/* Start/Game Over Overlay */}
-      {showOverlay && (
-        <div id="gameOverlay" className={`overlay absolute top-0 left-0 w-full h-full bg-black bg-opacity-70 flex flex-col justify-center items-center text-center z-20 transition-opacity duration-500 ease ${showOverlay ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-          <div className="overlay-content">
-            <h2 id="overlayTitle" className="text-[2.5rem] mb-[20px] text-shadow-[3px_3px_#000]"
-                style={{ fontFamily: "'Press Start 2P', cursive", color: accentColor }}
-                dangerouslySetInnerHTML={{ __html: overlayTitle }} // Use dangerouslySetInnerHTML for HTML in message
-            ></h2>
-            <p id="overlayMessage" className="text-[1.2rem] mb-[15px] max-w-[80%] mx-auto leading-tight"
-               style={{ color: textColor }}
-               dangerouslySetInnerHTML={{ __html: overlayMessage }} // Use dangerouslySetInnerHTML for HTML in message
-            ></p>
-            <button
-              id="startButton"
-              onClick={() => { initAudio(); startGame(); }}
-              className="px-[30px] py-[15px] border-none rounded-[10px] text-[1.5rem] font-bold cursor-pointer transition-all duration-300 ease shadow-[0_5px_#367c39] hover:translate-y-[-2px] hover:shadow-[0_7px_#367c39] active:translate-y-[3px] active:shadow-[0_2px_#367c39]"
-              style={{ backgroundColor: borderColor, color: textColor, fontFamily: "'Press Start 2P', cursive" }}
-            >
-              {startButtonText}
-            </button>
-          </div>
+      <div
+        ref={gameWrapperRef}
+        className="relative rounded-xl shadow-lg flex flex-col overflow-hidden max-w-[900px] w-[95vw] h-[95vh] max-h-[600px]"
+        style={{
+          backgroundColor: `rgba(255, 255, 255, 0.1)`, // Slightly transparent white overlay over main background
+          boxShadow: `0 0 30px rgba(0, 0, 0, 0.4)`,
+          color: textColor // Default text color
+        }}
+      >
+        <div className="game-header p-[15px_20px] rounded-t-[20px] text-center text-[1.5rem] relative z-10"
+             style={{ backgroundColor: accentColor, fontFamily: "'Press Start 2P', cursive", boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)" }}>
+          CYBER SAFARI: KASI YA KOMPYUTA
         </div>
-      )}
-    </div>
+        <div className="game-info flex justify-around p-[10px_20px] text-[1.1rem] font-semibold border-b-[2px] z-9"
+             style={{ backgroundColor: borderColor, borderColor: borderColor }}>
+          <div>Alama (Score): <span id="score">{score}</span></div>
+          <div>Muda (Time): <span id="timer">{timeLeft}s</span></div>
+        </div>
+        <canvas ref={canvasRef} id="gameCanvas" className="flex-grow block w-full touch-action-none select-none -webkit-tap-highlight-color:transparent"
+                style={{ backgroundColor: '#87ceeb' }}></canvas>
+        <div className="typing-area p-[15px_20px] rounded-b-[20px] flex flex-col items-center justify-center gap-[10px] z-10"
+             style={{ backgroundColor: accentColor }}>
+          <div ref={wordDisplayRef} id="wordDisplay" className="text-[1.8rem] mb-[10px] whitespace-nowrap overflow-hidden text-ellipsis"
+               style={{ fontFamily: "'Press Start 2P', cursive", color: textColor, textShadow: "2px 2px #000" }}>READY!</div>
+          <input
+            ref={textInputRef}
+            type="text"
+            id="textInput"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
+            onChange={handleInput}
+            disabled={!gameActive}
+            className="w-[80%] max-w-[400px] p-[10px_15px] border-[2px] rounded-[10px] text-[1.2rem] text-center outline-none transition-all duration-200 ease-in-out"
+            style={{
+              borderColor: textColor,
+              backgroundColor: secondaryText, // Using secondaryText for input background
+              color: primaryBg, // Input text color same as primary background for contrast
+              // Focus style is handled by Tailwind's focus:ring if enabled globally, or could be inlined
+              // For now, retaining a similar visual effect with specific border color on focus if needed
+            }}
+          />
+        </div>
+
+        {/* Start/Game Over Overlay */}
+        {showOverlay && (
+          <div id="gameOverlay" className={`overlay absolute top-0 left-0 w-full h-full bg-black bg-opacity-70 flex flex-col justify-center items-center text-center z-20 transition-opacity duration-500 ease ${showOverlay ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+            <div className="overlay-content">
+              <h2 id="overlayTitle" className="text-[2.5rem] mb-[20px] text-shadow-[3px_3px_#000]"
+                  style={{ fontFamily: "'Press Start 2P', cursive", color: accentColor }}
+                  dangerouslySetInnerHTML={{ __html: overlayTitle }} // Use dangerouslySetInnerHTML for HTML in message
+              ></h2>
+              <p id="overlayMessage" className="text-[1.2rem] mb-[15px] max-w-[80%] mx-auto leading-tight"
+                 style={{ color: textColor }}
+                 dangerouslySetInnerHTML={{ __html: overlayMessage }} // Use dangerouslySetInnerHTML for HTML in message
+              ></p>
+              <button
+                id="startButton"
+                onClick={() => { initAudio(); startGame(); }}
+                className="px-[30px] py-[15px] border-none rounded-[10px] text-[1.5rem] font-bold cursor-pointer transition-all duration-300 ease shadow-[0_5px_#367c39] hover:translate-y-[-2px] hover:shadow-[0_7px_#367c39] active:translate-y-[3px] active:shadow-[0_2px_#367c39]"
+                style={{ backgroundColor: borderColor, color: textColor, fontFamily: "'Press Start 2P', cursive" }}
+              >
+                {startButtonText}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
 
