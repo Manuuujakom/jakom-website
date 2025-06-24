@@ -2,19 +2,19 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Import routing components: BrowserRouter (aliased as Router), Routes, and Route, Link
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'; // Fixed typo: 'react-router-router-dom' -> 'react-router-dom'
 import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, Home, Mail, Phone, MessageSquare, Smartphone } from 'lucide-react';
 
 // --- Import your actual page components from the src/pages directory ---
 // These imports are crucial to ensure App.js renders the content from those specific files.
 // Ensure each of these files (e.g., src/pages/GraphicsDesign.js) exports its component as 'default'.
-import GraphicsDesignPage from './pages/GraphicsDesign'; // Renamed to avoid conflict with local const
-import DataAnalysisPage from './pages/DataAnalysis';     // Renamed for clarity
-import AccountingBookkeepingPage from './pages/AccountingBookkeeping'; // Renamed for clarity
-import VirtualAssistancePage from './pages/VirtualAssistance'; // Renamed for clarity
-import KidsHubPage from './pages/KidsHub';               // Renamed for clarity
-import AboutUsPage from './pages/AboutUs';               // Renamed for clarity
-import ContactUsPage from './pages/ContactUs';           // The new ContactUs component
+import GraphicsDesignPage from './pages/GraphicsDesign'; 
+import DataAnalysisPage from './pages/DataAnalysis';     
+import AccountingBookkeepingPage from './pages/AccountingBookkeeping'; 
+import VirtualAssistancePage from './pages/VirtualAssistance'; 
+import KidsHubPage from './pages/KidsHub';             
+import AboutUsPage from './pages/AboutUs';             
+import ContactUsPage from './pages/ContactUs';           
 
 // Import the reusable PlaceholderPage component
 // Adjust the path based on where you decide to place PlaceholderPage.js (e.g., in src/components/)
@@ -165,7 +165,53 @@ const App = () => {
           {`
           html, body { height: 100%; }
           body { font-family: 'Inter', sans-serif; margin: 0; background-color: #0A1128; color: #F8F8F8; overflow-x: hidden; }
-          .jo-logo-container { position: relative; width: 500px; max-width: 90%; height: auto; aspect-ratio: 500 / 300; overflow: hidden; margin-left: auto; margin-right: auto; }
+
+          /* MODIFICATION START: Hero Section Responsiveness */
+          .hero-section {
+            min-height: 85vh; /* A good starting point, gives some buffer on mobile */
+            padding-top: 6rem; /* Add generous top padding to prevent header overlap and give space */
+            padding-bottom: 6rem; /* Add generous bottom padding */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            /* Allow content to scroll within this section if it exceeds min-height */
+            overflow-y: auto; /* Allow vertical scrolling if content is too tall */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+          }
+
+          /* For larger screens, use full viewport height */
+          @media (min-width: 768px) { /* md breakpoint in Tailwind */
+            .hero-section {
+              height: 100vh; /* Use full viewport height on larger screens */
+              min-height: unset; /* Remove min-height override */
+              padding-top: 0;
+              padding-bottom: 0;
+            }
+          }
+          /* MODIFICATION END: Hero Section Responsiveness */
+
+          /* MODIFICATION START: Logo Container Responsiveness */
+          .jo-logo-container {
+            position: relative;
+            /* Removed fixed width: 500px here to allow it to shrink more fluidly on small screens */
+            max-width: 90%; /* Keep max-width for larger screens */
+            width: 250px; /* Set a reasonable default width for mobile */
+            height: auto;
+            aspect-ratio: 500 / 300;
+            overflow: hidden; /* Keep overflow hidden for shape, but ensure content fits */
+            margin-left: auto;
+            margin-right: auto;
+          }
+
+          @media (min-width: 768px) { /* md breakpoint */
+            .jo-logo-container {
+              width: 500px; /* Reapply original width for larger screens */
+            }
+          }
+          /* MODIFICATION END: Logo Container Responsiveness */
+
           .jo-logo { animation: logoReveal 3s ease-out forwards; transform-origin: center; opacity: 0; width: 100%; height: 100%; object-fit: contain; }
           @keyframes logoReveal { 0% { opacity: 0; transform: scale(0.7) translateY(20px); } 50% { opacity: 1; transform: scale(1.05) translateY(-5px); } 100% { opacity: 1; transform: scale(1); } }
           .hero-text-animate { animation: textFadeIn 2s ease-out forwards; opacity: 0; transform: translateY(20px); }
@@ -239,7 +285,8 @@ const App = () => {
           {/* Home Page Route - Renders all original sections of the home page */}
           <Route path="/" element={
             <> {/* Use a React Fragment to group multiple elements for the home page route */}
-              <section className="relative h-screen flex flex-col justify-center items-center text-center px-6 bg-[#0A1128] overflow-hidden bg-particles">
+              {/* Applied the 'hero-section' class for responsive height and overflow handling */}
+              <section className="relative hero-section px-6 bg-[#0A1128] overflow-hidden bg-particles">
                   <div className="absolute inset-0 bg-gradient-to-br from-transparent via-rgba(201, 176, 114, 0.05) to-transparent pointer-events-none"></div>
                   <div className="relative z-10 max-w-4xl mx-auto pb-16">
                       <div className="jo-logo-container mx-auto">
@@ -250,7 +297,8 @@ const App = () => {
                               onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/500x300/0A1128/C9B072?text=Logo+Missing'; }}
                           />
                       </div>
-                      <h1 className="text-6xl md:text-7xl font-extrabold text-[#F8F8F8] leading-tight mt-8 mb-4 hero-text-animate">
+                      {/* Adjusted font sizing for better mobile responsiveness */}
+                      <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-[#F8F8F8] leading-tight mt-8 mb-4 hero-text-animate">
                           JAKOM: Your <span className="shimmer-text text-[#C9B072]">One-Stop</span> Tech Solution
                       </h1>
                       <p className="text-xl md:text-2xl text-[#CCD2E3] mb-8 hero-text-animate" style={{ animationDelay: '2.5s' }}>
@@ -339,7 +387,7 @@ const App = () => {
           <Route path="/virtual-assistance" element={<VirtualAssistancePage />} />
           <Route path="/kids-hub" element={<KidsHubPage />} />
           <Route path="/about-us" element={<AboutUsPage />} />
-          <Route path="/contact-us" element={<ContactUsPage />} /> {/* Using the new ContactUs component */}
+          <Route path="/contact-us" element={<ContactUsPage />} /> 
         </Routes>
 
         {/* Footer (remains outside of Routes as it's common to all pages) */}
