@@ -2,23 +2,20 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Import routing components: BrowserRouter (aliased as Router), Routes, and Route, Link
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+// Import useLocation for tracking route changes with Google Analytics
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { BarChart2, DollarSign, Headset, Paintbrush, Code, Info, Users, School, Home, Mail, Phone, MessageSquare, Smartphone } from 'lucide-react';
 
 // --- Import your actual page components from the src/pages directory ---
-// IMPORTANT: Ensure these files (e.g., src/pages/GraphicsDesign.js) exist in your project
-// and that each exports its component as 'default'. The errors indicate these files
-// might be missing or have incorrect names/paths in your project structure.
 import GraphicsDesignPage from './pages/GraphicsDesign'; 
-import DataAnalysisPage from './pages/DataAnalysis';     
-import AccountingBookkeepingPage from './pages/AccountingBookkeeping'; 
+import DataAnalysisPage from './pages/DataAnalysis';   
+import AccountingBookkeepingPage from './pages/AccountingBookkeeping';
 import VirtualAssistancePage from './pages/VirtualAssistance'; 
 import KidsHubPage from './pages/KidsHub';             
 import AboutUsPage from './pages/AboutUs';             
-import ContactUsPage from './pages/ContactUs';           
+import ContactUsPage from './pages/ContactUs';         
 
 // Import the reusable PlaceholderPage component
-// Adjust the path based on where you decide to place PlaceholderPage.js (e.g., in src/components/)
 import PlaceholderPage from './components/PlaceholderPage';
 
 
@@ -87,6 +84,26 @@ const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
     </Link>
   );
 };
+
+// Component to handle Google Analytics page view tracking
+const GaTracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Check if gtag function exists (it's defined in public/index.html)
+    if (window.gtag) {
+      window.gtag('event', 'page_view', {
+        page_path: location.pathname + location.search,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+      console.log('GA Page View:', location.pathname + location.search); // For debugging
+    }
+  }, [location]); // Re-run effect whenever the location changes
+
+  return null; // This component doesn't render anything visually
+};
+
 
 // Main App Component
 const App = () => {
@@ -160,6 +177,7 @@ const App = () => {
 
   return (
     <Router> {/* Wrap the entire application in BrowserRouter */}
+      <GaTracker /> {/* Add the GA Tracker component here to track page views */}
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] font-sans overflow-x-hidden">
 
         <style>
@@ -339,7 +357,6 @@ const App = () => {
                           <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8">
                               At JAKOM, we believe in nurturing talent from a young age. Our Kids Hub offers engaging and interactive programs designed to introduce children to the exciting world of technology, creativity, and problem-solving. Spark curiosity and build foundational skills for a brighter future!
                           </p>
-                          {/* This button on the home page specifically links to the Kids Hub page */}
                           <Link to="/kids-hub" className="px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 inline-flex items-center justify-content-center">
                               Explore Kids Hub
                           </Link>
@@ -395,18 +412,14 @@ const App = () => {
         <footer className="bg-[#0A1128] border-t border-[#C9B072] py-8 text-center text-[#CCD2E3] text-lg">
           <div className="container mx-auto px-6">
             <p>&copy; {new Date().getFullYear()} JAKOM. All rights reserved.</p>
-            {/* Added new paragraph for "Built by Obare Emmanuel" */}
             <p className="mt-2 text-sm">Built by Obare Emmanuel</p>
             <div className="flex justify-center space-x-6 mt-4">
-              {/* Added Email Icon */}
               <a href="mailto:emmanuelomondiobare@gmail.com" className="hover:text-[#C9B072] transition duration-300" aria-label="Email Us">
                 <Mail size={24} />
               </a>
-              {/* Added WhatsApp Icon */}
               <a href="https://wa.me/254794255000" target="_blank" rel="noopener noreferrer" className="hover:text-[#C9B072] transition duration-300" aria-label="WhatsApp Us">
                 <Smartphone size={24} />
               </a>
-              {/* Original placeholders, kept for context unless explicitly removed */}
               <a href="https://example.com/users" target="_blank" rel="noopener noreferrer" className="hover:text-[#C9B072] transition duration-300"><Users size={24} /></a>
               <a href="https://example.com/code" target="_blank" rel="noopener noreferrer" className="hover:text-[#C9B072] transition duration-300"><Code size={24} /></a>
             </div>
