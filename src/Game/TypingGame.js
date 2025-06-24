@@ -7,27 +7,28 @@ const GAME_DURATION = 60; // seconds
 const VEHICLE_WIDTH = 80; // Defined as a constant for consistent access
 const VEHICLE_HEIGHT = 50; // Also define vehicle height as a constant
 
-const words = [
-    "Keyboard", "Mouse", "Monitor", "CPU", "RAM", "ROM", "Software", "Hardware",
-    "Browser", "Internet", "Wi-Fi", "Ethernet", "Firewall", "Virus", "Antivirus",
-    "Backup", "Cloud", "Server", "Network", "Byte", "Bit", "Pixel", "Resolution",
-    "USB", "HDMI", "Bluetooth", "Code", "Program", "Algorithm", "Loop", "Variable",
-    "Function", "Debug", "HTML", "CSS", "JavaScript", "Database", "Security",
-    "Processor", "Storage", "Application", "Website", "Domain", "Hosting",
-    "Encryption", "Malware", "Phishing", "Spam", "Firewall", "Router",
-    "Modem", "Gigabyte", "Megabyte", "Kilobyte", "TeraByte", "Output", "Input",
-    "Array", "Object", "Boolean", "String", "Integer", "Float", "Syntax", "Error"
-];
+// Removed the static 'words' array. We will fetch words dynamically.
+// const words = [
+//     "Keyboard", "Mouse", "Monitor", "CPU", "RAM", "ROM", "Software", "Hardware",
+//     "Browser", "Internet", "Wi-Fi", "Ethernet", "Firewall", "Virus", "Antivirus",
+//     "Backup", "Cloud", "Server", "Network", "Byte", "Bit", "Pixel", "Resolution",
+//     "USB", "HDMI", "Bluetooth", "Code", "Program", "Algorithm", "Loop", "Variable",
+//     "Function", "Debug", "HTML", "CSS", "JavaScript", "Database", "Security",
+//     "Processor", "Storage", "Application", "Website", "Domain", "Hosting",
+//     "Encryption", "Malware", "Phishing", "Spam", "Firewall", "Router",
+//     "Modem", "Gigabyte", "Megabyte", "Kilobyte", "TeraByte", "Output", "Input",
+//     "Array", "Object", "Boolean", "String", "Integer", "Float", "Syntax", "Error"
+// ];
 
 const swahiliPhrases = {
     welcomeTitle: "KARIBU CYBER SAFARI!",
     welcomeMessage: `Jitayarishe kuongeza kasi ya kuandika na ujuzi wako wa kompyuta! Andika maneno ya teknolojia unapoona,
-                     kusaidia gari lako la safari kusonga mbele. Kila neno sahihi huongeza alama zako na kukusogeza mbele.
-                     Haraka haraka, na usikose herufi!
-                     <br><br>
-                     (Get ready to boost your typing speed and computer skills! Type the tech words you see,
-                     to help your safari vehicle move forward. Every correct word boosts your score and moves you ahead.
-                     Faster faster, and don't miss a letter!)`,
+                     kusaidia gari lako la safari kusonga mbele. Kila neno sahihi huongeza alama zako na kukusogeza mbele.
+                     Haraka haraka, na usikose herufi!
+                     <br><br>
+                     (Get ready to boost your typing speed and computer skills! Type the tech words you see,
+                     to help your safari vehicle move forward. Every correct word boosts your score and moves you ahead.
+                     Faster faster, and don't miss a letter!)`,
     startButton: "ANZA MCHEZO! (Start Game!)",
     goodJob: ["Kazi Nzuri!", "Heko!", "Vizuri Sana!", "Endelea!"],
     faster: ["Haraka haraka!", "Ongeza Kasi!", "Usisahau herufi!"],
@@ -60,11 +61,6 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-
-        // Removed the direct width/height manipulation.
-        // The canvas size should be controlled by CSS (width: 100%, height: 100%)
-        // The current canvas.width/height will reflect the actual rendered size
-        // which is set by its parent (via CSS).
 
         const groundLevel = canvas.height * 0.8;
         const vehicleY = groundLevel - VEHICLE_HEIGHT;
@@ -128,21 +124,13 @@ const GameCanvas = React.memo(({ gameActive, vehicleX }) => {
         if (!canvas) return; // Ensure canvas is available before observing
 
         const resizeObserver = new ResizeObserver(() => {
-            // No need to set canvas width/height here directly, CSS handles it.
-            // Just redraw to update internal canvas drawing dimensions.
             debouncedDrawGame();
         });
 
-        // Observe the canvas element itself (it's the one whose dimensions might change via CSS)
-        // Or its parent if you want the parent's size changes to trigger redraw.
-        // Observing the canvas directly is usually safer for an element that fills its parent.
         resizeObserver.observe(canvas);
 
-
         return () => {
-            // Disconnect observer on unmount
             resizeObserver.disconnect();
-            // Cancel any pending debounced calls to prevent issues after unmount
             debouncedDrawGame.cancel();
         };
     }, [debouncedDrawGame]);
@@ -237,6 +225,7 @@ function TypingGame() {
     const [overlayMessage, setOverlayMessage] = useState(swahiliPhrases.welcomeMessage);
     const [startButtonText, setStartButtonText] = useState(swahiliPhrases.startButton);
     const [vehicleX, setVehicleX] = useState(50); // Vehicle X position for canvas drawing
+    const [isLoadingWord, setIsLoadingWord] = useState(false); // New state for loading indicator
 
     const audioContextRef = useRef(null);
 
@@ -284,12 +273,34 @@ function TypingGame() {
         oscillator.stop(audioContextRef.current.currentTime + 0.5);
     }, []);
 
-
-    const getRandomWord = useCallback(() => {
-        const randomIndex = Math.floor(Math.random() * words.length);
-        setCurrentWord(words[randomIndex]);
-        setTypedInput('');
+    // --- New function to fetch a random word ---
+    const fetchRandomWord = useCallback(async () => {
+        setIsLoadingWord(true); // Set loading state
+        try {
+            // You can adjust the length parameter if the API supports it.
+            // For example: `https://random-word-api.herokuapp.com/word?length=5` for 5-letter words
+            const response = await fetch('https://random-word-api.herokuapp.com/word');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            // The API returns an array, usually with one word: ["example"]
+            if (data && data.length > 0) {
+                setCurrentWord(data[0]);
+            } else {
+                // Fallback if API returns empty array or unexpected data
+                console.warn('API returned no words. Using fallback word.');
+                setCurrentWord("fallback"); // A simple fallback
+            }
+        } catch (error) {
+            console.error("Failed to fetch word:", error);
+            setCurrentWord("error"); // Show an error word or handle gracefully
+        } finally {
+            setIsLoadingWord(false); // Clear loading state
+            setTypedInput(''); // Clear input for the new word
+        }
     }, []);
+
 
     const showTemporaryMessage = useCallback((message, color) => {
         const gameWrapper = document.querySelector('.typing-game-wrapper');
@@ -323,7 +334,7 @@ function TypingGame() {
     }, []);
 
     const handleInput = useCallback((event) => {
-        if (!gameActive) return;
+        if (!gameActive || isLoadingWord) return; // Prevent typing while loading
 
         const typedText = event.target.value;
         setTypedInput(typedText);
@@ -333,16 +344,25 @@ function TypingGame() {
             setVehicleX(prevX => {
                 const canvas = document.getElementById('gameCanvas');
                 if (canvas) {
-                    const newX = prevX + 20;
+                    // Adjust movement based on word length to prevent too fast/slow movement
+                    const movementFactor = Math.max(1, currentWord.length / 5); // Longer words move more
+                    const newX = prevX + (20 * movementFactor);
                     return Math.min(newX, canvas.width - VEHICLE_WIDTH - 50);
                 }
                 return prevX;
             });
             playCorrectSound();
             showTemporaryMessage(swahiliPhrases.correctWord, 'green');
-            getRandomWord();
+            fetchRandomWord(); // Fetch a new word
+        } else if (typedText.length >= currentWord.length) {
+            // If the typed text is as long as the word but incorrect,
+            // you might want to penalize or simply not advance.
+            // For now, let's just clear the input and get a new word (with no score).
+            // showTemporaryMessage(swahiliPhrases.wrongLetter, 'orange'); // Optional: show a "wrong" message
+            // setTypedInput('');
+            // fetchRandomWord();
         }
-    }, [gameActive, currentWord, playCorrectSound, getRandomWord, showTemporaryMessage]);
+    }, [gameActive, currentWord, playCorrectSound, fetchRandomWord, showTemporaryMessage, isLoadingWord]); // Added isLoadingWord to dependencies
 
     const startGame = useCallback(() => {
         initAudio();
@@ -351,16 +371,16 @@ function TypingGame() {
         setVehicleX(50);
         setGameActive(true);
         setOverlayActive(false);
-        getRandomWord();
+        fetchRandomWord(); // Initial word fetch
         setTypedInput('');
-    }, [getRandomWord, initAudio]);
+    }, [fetchRandomWord, initAudio]);
 
     const endGame = useCallback(() => {
         setGameActive(false);
         setOverlayActive(true);
         setOverlayTitle(swahiliPhrases.gameOver);
         setOverlayMessage(`Alama zako ni: <span style="color:#ffd700; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!<br><br>
-                         (Your Score: <span style="color:#ffd700; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!)`);
+                         (Your Score: <span style="color:#ffd700; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!)`);
         setStartButtonText(swahiliPhrases.playAgain);
         playTimeUpSound();
     }, [score, playTimeUpSound]);
@@ -389,12 +409,18 @@ function TypingGame() {
             <GameHeader />
             <GameInfo score={score} timeLeft={timeLeft} />
             <GameCanvas gameActive={gameActive} vehicleX={vehicleX} />
-            <TypingArea
-                currentWord={currentWord}
-                typedInput={typedInput}
-                handleInput={handleInput}
-                gameActive={gameActive}
-            />
+            {isLoadingWord ? ( // Show a loading message when fetching a word
+                <div className="typing-area loading-word-message">
+                    Inapakia neno... (Loading word...)
+                </div>
+            ) : (
+                <TypingArea
+                    currentWord={currentWord}
+                    typedInput={typedInput}
+                    handleInput={handleInput}
+                    gameActive={gameActive}
+                />
+            )}
             <GameOverlay
                 isActive={overlayActive}
                 title={overlayTitle}
