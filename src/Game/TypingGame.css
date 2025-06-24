@@ -1,0 +1,285 @@
+/* General Body and Container Styling - REMOVED from here, managed by parent component */
+/* The main wrapper of the game */
+.typing-game-wrapper {
+    background-color: rgba(255, 255, 255, 0.15); /* Slightly more opaque white overlay */
+    border-radius: 15px; /* Adjust as needed for card fit */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4); /* Softer shadow for card */
+
+    /* --- BEGIN CORRECTIONS FOR SIZE AND CENTERING --- */
+    /*
+     * Use responsive width and height based on viewport, with max limits.
+     * Add percentage-based margins for dynamic spacing from edges.
+     */
+    width: 90vw; /* 90% of viewport width */
+    max-width: 900px; /* Maximum width for larger screens */
+    height: 85vh; /* 85% of viewport height */
+    max-height: 600px; /* Maximum height for larger screens */
+    aspect-ratio: 16 / 9; /* Maintain a specific aspect ratio for the game area */
+
+    /* Responsive margins - 2.5vw horizontally, 2.5vh vertically */
+    /* This creates a dynamic border around the game, relative to viewport size */
+    margin: 2.5vh 2.5vw;
+
+    /* If you prefer to center it AND have dynamic margins (margin: auto does not work with % margins consistently) */
+    /* An alternative if its parent is flex/grid and you want it strictly centered: */
+    /*
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    */
+    /* But the percentage margins are generally simpler for just keeping it within bounds. */
+
+
+    /* --- END CORRECTIONS --- */
+
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Important for canvas and internal layout */
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
+    color: #fff; /* Default text color for the wrapper */
+    font-family: 'Inter', sans-serif; /* Keep font family here */
+}
+
+/* Game Header */
+.game-header {
+    background-color: #4CAF50; /* Vibrant green header */
+    background-image: linear-gradient(to right, #4CAF50, #8bc34a); /* Green gradient */
+    padding: 15px 20px;
+    border-top-left-radius: 14px; /* Match wrapper border-radius - 1px */
+    border-top-right-radius: 14px;
+    text-align: center;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.5rem; /* Larger font for title */
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+/* Game Info Bar (Score, Timer) */
+.game-info {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 15px;
+    background-color: #2196F3; /* Blue for info bar */
+    background-image: linear-gradient(to right, #2196F3, #03a9f4); /* Blue gradient */
+    font-size: 1rem;
+    font-weight: 700;
+    border-bottom: 1px solid #1976D2;
+    z-index: 9;
+    color: #fff;
+    flex-shrink: 0; /* Prevent info bar from shrinking */
+}
+.game-info span {
+    color: #FFEB3B;
+    margin-left: 5px;
+}
+
+/* Game Canvas */
+#gameCanvas {
+    flex-grow: 1; /* Takes available space */
+    background-color: #87ceeb; /* Sky blue */
+    display: block; /* Important for canvas to render correctly */
+    width: 100%; /* Ensure it fills the width of its flex parent */
+    touch-action: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Typing Input Area */
+.typing-area {
+    background-color: #4CAF50;
+    background-image: linear-gradient(to right, #4CAF50, #8bc34a);
+    padding: 15px 20px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    z-index: 10;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0; /* Prevent typing area from shrinking */
+}
+
+#wordDisplay {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.8rem;
+    color: #fff;
+    margin-bottom: 5px;
+    text-shadow: 2px 2px #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 1px;
+}
+
+#textInput {
+    width: 90%;
+    max-width: 350px;
+    padding: 10px 15px;
+    border: 2px solid #fff;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    text-align: center;
+    outline: none;
+    background-color: #e0f2f7;
+    color: #333;
+    transition: all 0.2s ease-in-out;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#textInput:focus {
+    border-color: #FFEB3B;
+    box-shadow: 0 0 8px rgba(255, 235, 59, 0.6), inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    background-color: #ffffff;
+}
+
+/* Game Over / Start Screen Overlay */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+    text-align: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+}
+
+.overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.overlay-content {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(3px);
+    animation: fadeInScale 0.6s ease-out forwards;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.overlay-content h2 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 2rem;
+    color: #FFD700;
+    margin-bottom: 20px;
+    text-shadow: 3px 3px #000;
+    letter-spacing: 2px;
+}
+
+.overlay-content p {
+    font-size: 1rem;
+    margin-bottom: 20px;
+    color: #e0e0e0;
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+.overlay-content button {
+    background-color: #4CAF50;
+    background-image: linear-gradient(to right, #4CAF50, #8bc34a);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px #367c39;
+    font-family: 'Press Start 2P', cursive;
+    letter-spacing: 1px;
+}
+
+.overlay-content button:hover {
+    background-color: #45a049;
+    background-image: linear-gradient(to right, #45a049, #7cb342);
+    transform: translateY(-2px);
+    box-shadow: 0 6px #367c39;
+}
+
+.overlay-content button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px #367c39;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .game-header {
+        font-size: 1.2rem;
+        padding: 10px 15px;
+    }
+    .game-info {
+        font-size: 0.9rem;
+        padding: 8px 10px;
+    }
+    #wordDisplay {
+        font-size: 1.4rem;
+    }
+    #textInput {
+        font-size: 1rem;
+        padding: 8px 10px;
+    }
+    .overlay-content h2 {
+        font-size: 1.5rem;
+    }
+    .overlay-content p {
+        font-size: 0.9rem;
+    }
+    .overlay-content button {
+        font-size: 1.1rem;
+        padding: 10px 20px;
+    }
+}
+@media (max-width: 480px) {
+    .game-header {
+        font-size: 1rem;
+    }
+    .game-info {
+        font-size: 0.8rem;
+    }
+    #wordDisplay {
+        font-size: 1.2rem;
+    }
+    #textInput {
+        font-size: 0.8rem;
+    }
+    .overlay-content h2 {
+        font-size: 1.2rem;
+    }
+    .overlay-content p {
+        font-size: 0.8rem;
+    }
+    .overlay-content button {
+        font-size: 1rem;
+    }
+}
