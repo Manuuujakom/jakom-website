@@ -36,7 +36,7 @@ const CyberSafariGame = ({ themeColors }) => {
   const audioContextRef = useRef(null);
 
   // Tech-related words with a mix of difficulty
-  const words = [
+  const words = useRef([
     "Keyboard", "Mouse", "Monitor", "CPU", "RAM", "ROM", "Software", "Hardware",
     "Browser", "Internet", "Wi-Fi", "Ethernet", "Firewall", "Virus", "Antivirus",
     "Backup", "Cloud", "Server", "Network", "Byte", "Bit", "Pixel", "Resolution",
@@ -46,7 +46,10 @@ const CyberSafariGame = ({ themeColors }) => {
     "Encryption", "Malware", "Phishing", "Spam", "Firewall", "Router",
     "Modem", "Gigabyte", "Megabyte", "Kilobyte", "TeraByte", "Output", "Input",
     "Array", "Object", "Boolean", "String", "Integer", "Float", "Syntax", "Error"
-  ];
+  ]).current; // Use useRef for constant data
+
+  // Shuffled words for the current session to prevent repetition
+  const shuffledWordsForSession = useRef([]);
 
   // Swahili phrases for encouragement/game events
   const swahiliPhrases = {
@@ -56,7 +59,9 @@ const CyberSafariGame = ({ themeColors }) => {
     gameOver: "MCHEZO UMEKWISHA!",
     playAgain: "Cheza Tena?",
     wrongLetter: "Sio Hiyo!",
-    correctWord: "Sahihi!"
+    correctWord: "Sahihi!",
+    gameQuit: "MCHEZO UMEACHWA!",
+    quitMessage: "Umeamua kuacha mchezo. Tufanye tena! (You chose to quit the game. Let's play again!)"
   };
 
   // Canvas Drawing Properties
@@ -93,10 +98,21 @@ const CyberSafariGame = ({ themeColors }) => {
 
   // Game Functions
   const getRandomWord = useCallback(() => {
-    const randomIndex = Math.floor(Math.random() * words.length);
-    setCurrentWord(words[randomIndex].toLowerCase());
+    // If all words have been used, reshuffle the entire list
+    if (shuffledWordsForSession.current.length === 0) {
+      // Fisher-Yates (Knuth) shuffle algorithm for `words`
+      let tempWords = [...words]; // Create a mutable copy
+      for (let i = tempWords.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [tempWords[i], tempWords[j]] = [tempWords[j], tempWords[i]]; // Swap
+      }
+      shuffledWordsForSession.current = tempWords;
+    }
+
+    const wordToUse = shuffledWordsForSession.current.pop(); // Get and remove the last word
+    setCurrentWord(wordToUse.toLowerCase());
     if (wordDisplayRef.current) {
-      wordDisplayRef.current.textContent = words[randomIndex];
+      wordDisplayRef.current.textContent = wordToUse; // Display original case
     }
     if (textInputRef.current) {
       textInputRef.current.value = '';
@@ -104,7 +120,8 @@ const CyberSafariGame = ({ themeColors }) => {
     }
   }, [words]);
 
-  const endGame = useCallback(() => {
+  // Unified End Game function for timer end and quit
+  const endGame = useCallback((quit = false) => {
     setGameActive(false);
     clearInterval(gameIntervalRef.current);
     if (animationFrameRef.current) {
@@ -114,11 +131,16 @@ const CyberSafariGame = ({ themeColors }) => {
       textInputRef.current.disabled = true;
     }
 
-    setOverlayTitle(swahiliPhrases.gameOver);
-    setOverlayMessage(
-      `Alama zako ni: <span style="color:${accentColor}; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!<br><br>
-      (Your Score: <span style="color:${accentColor}; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!)`
-    );
+    if (quit) {
+      setOverlayTitle(swahiliPhrases.gameQuit);
+      setOverlayMessage(swahiliPhrases.quitMessage);
+    } else {
+      setOverlayTitle(swahiliPhrases.gameOver);
+      setOverlayMessage(
+        `Alama zako ni: <span style="color:${accentColor}; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!<br><br>
+        (Your Score: <span style="color:${accentColor}; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!)`
+      );
+    }
     setStartButtonText(swahiliPhrases.playAgain);
     setShowOverlay(true);
   }, [score, accentColor, swahiliPhrases]);
@@ -127,7 +149,7 @@ const CyberSafariGame = ({ themeColors }) => {
     setTimeLeft(prevTime => {
       const newTime = prevTime - 1;
       if (newTime <= 0) {
-        endGame();
+        endGame(false); // Game ended by timer
         return 0;
       }
       return newTime;
@@ -261,15 +283,21 @@ const CyberSafariGame = ({ themeColors }) => {
     vehicle.x = 50; // Reset vehicle position
     setGameActive(true);
     setShowOverlay(false);
+    shuffledWordsForSession.current = []; // Clear and re-shuffle words for new session
     if (textInputRef.current) {
       textInputRef.current.disabled = false;
       textInputRef.current.value = '';
       textInputRef.current.focus();
     }
-    getRandomWord();
+    getRandomWord(); // Get the first word of the new session
     gameIntervalRef.current = setInterval(updateGame, 1000);
     gameLoop();
   }, [getRandomWord, updateGame, gameLoop, vehicle]);
+
+  const handleQuitGame = useCallback(() => {
+    endGame(true); // Call endGame with 'quit' flag
+  }, [endGame]);
+
 
   const resizeCanvas = useCallback(() => {
     const gameWrapper = gameWrapperRef.current;
@@ -318,9 +346,6 @@ const CyberSafariGame = ({ themeColors }) => {
   }, [gameActive, gameLoop]);
 
   return (
-    // React components must return a single root element.
-    // The <link> tag was a sibling to the main <div>, causing the error.
-    // Wrap them in a React Fragment to resolve this.
     <>
       <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 
@@ -341,6 +366,15 @@ const CyberSafariGame = ({ themeColors }) => {
              style={{ backgroundColor: borderColor, borderColor: borderColor }}>
           <div>Alama (Score): <span id="score">{score}</span></div>
           <div>Muda (Time): <span id="timer">{timeLeft}s</span></div>
+          {gameActive && ( // Show quit button only when game is active
+            <button
+              onClick={handleQuitGame}
+              className="px-4 py-1 rounded-md text-sm font-semibold cursor-pointer transition-all duration-200 ease"
+              style={{ backgroundColor: primaryBg, color: textColor, border: `1px solid ${textColor}` }}
+            >
+              Acha Mchezo (Quit)
+            </button>
+          )}
         </div>
         <canvas ref={canvasRef} id="gameCanvas" className="flex-grow block w-full touch-action-none select-none -webkit-tap-highlight-color:transparent"
                 style={{ backgroundColor: '#87ceeb' }}></canvas>
@@ -363,8 +397,6 @@ const CyberSafariGame = ({ themeColors }) => {
               borderColor: textColor,
               backgroundColor: secondaryText, // Using secondaryText for input background
               color: primaryBg, // Input text color same as primary background for contrast
-              // Focus style is handled by Tailwind's focus:ring if enabled globally, or could be inlined
-              // For now, retaining a similar visual effect with specific border color on focus if needed
             }}
           />
         </div>
@@ -375,11 +407,11 @@ const CyberSafariGame = ({ themeColors }) => {
             <div className="overlay-content">
               <h2 id="overlayTitle" className="text-[2.5rem] mb-[20px] text-shadow-[3px_3px_#000]"
                   style={{ fontFamily: "'Press Start 2P', cursive", color: accentColor }}
-                  dangerouslySetInnerHTML={{ __html: overlayTitle }} // Use dangerouslySetInnerHTML for HTML in message
+                  dangerouslySetInnerHTML={{ __html: overlayTitle }}
               ></h2>
               <p id="overlayMessage" className="text-[1.2rem] mb-[15px] max-w-[80%] mx-auto leading-tight"
                  style={{ color: textColor }}
-                 dangerouslySetInnerHTML={{ __html: overlayMessage }} // Use dangerouslySetInnerHTML for HTML in message
+                 dangerouslySetInnerHTML={{ __html: overlayMessage }}
               ></p>
               <button
                 id="startButton"
