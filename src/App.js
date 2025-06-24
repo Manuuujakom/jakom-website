@@ -172,7 +172,7 @@ const App = () => {
       observer.disconnect(); // Disconnect the observer completely
       observedSections.current.clear(); // Clear the Set to prevent stale references
     };
-  }, [handleAppSectionIntersect]); // Re-run effect if handleAppSectionIntersect changes (though it's useCallback, so it won't)
+  }, [handleAppSectionIntersect]); // Re-run effect if handleAppSectionIntersect changes (though it's useCallback, so it's stable)
 
 
   return (
@@ -347,7 +347,13 @@ const App = () => {
                   <div className="flex flex-col md:flex-row items-center gap-12">
                       {/* Apply fade-in-up class and the callback ref */}
                       <div className="md:w-1/2 flex justify-center fade-in-up" ref={setSectionRef}>
-                          <img src="https://placehold.co/500x350/0A1128/4CAF50?text=Kids+Hub+Fun" alt="Kids Hub" className="rounded-xl shadow-2xl object-cover" />
+                          {/* Updated Kids Hub image source using public path */}
+                          <img 
+                              src={process.env.PUBLIC_URL + '/images/kidshub.png'} 
+                              alt="Kids Hub" 
+                              className="rounded-xl shadow-2xl object-cover" 
+                              onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/500x350/0A1128/4CAF50?text=Kids+Hub+Fun'; }}
+                          />
                       </div>
                       {/* Apply fade-in-up class and the callback ref */}
                       <div className="md:w-1/2 text-center md:text-left fade-in-up" ref={setSectionRef}>
