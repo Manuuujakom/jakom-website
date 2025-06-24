@@ -12,6 +12,7 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
   const gameWrapperRef = useRef(null); // Ref for the main game wrapper for sizing
 
   const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0); // New: Track high score for the session
   const [timeLeft, setTimeLeft] = useState(60); // GAME_DURATION
   const [currentWord, setCurrentWord] = useState('');
   const [gameActive, setGameActive] = useState(false);
@@ -61,7 +62,9 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
     wrongLetter: "Sio Hiyo!",
     correctWord: "Sahihi!",
     gameQuit: "MCHEZO UMEACHWA!",
-    quitMessage: "Umeamua kuacha mchezo. Tufanye tena! (You chose to quit the game. Let's play again!)"
+    quitMessage: "Umeamua kuacha mchezo. Tufanye tena! (You chose to quit the game. Let's play again!)",
+    newRecord: "REKODI MPYA!", // New phrase
+    gameOverPrompt: "Mchezo umekwisha! Je, ungependa kucheza tena?"
   };
 
   // Canvas Drawing Properties
@@ -79,22 +82,42 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
     }
   }, []);
 
-  const playCorrectSound = useCallback(() => {
+  // New sound functions for different events
+  const createSound = useCallback((frequency, type, duration, gainValue) => {
     if (!audioContextRef.current) return;
     const oscillator = audioContextRef.current.createOscillator();
     const gainNode = audioContextRef.current.createGain();
 
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(440, audioContextRef.current.currentTime); // A4
-    gainNode.gain.setValueAtTime(0.5, audioContextRef.current.currentTime);
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
+    gainNode.gain.setValueAtTime(gainValue, audioContextRef.current.currentTime);
 
     oscillator.connect(gainNode);
     gainNode.connect(audioContextRef.current.destination);
 
     oscillator.start();
-    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + 0.15); // Quick fade out
-    oscillator.stop(audioContextRef.current.currentTime + 0.15);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + duration);
+    oscillator.stop(audioContextRef.current.currentTime + duration);
   }, []);
+
+  const playCorrectSound = useCallback(() => {
+    createSound(880, 'sine', 0.1, 0.5); // Higher pitch for correct
+  }, [createSound]);
+
+  const playWrongSound = useCallback(() => {
+    createSound(220, 'triangle', 0.2, 0.6); // Lower, harsher sound for wrong
+  }, [createSound]);
+
+  const playGameOverSound = useCallback(() => {
+    createSound(110, 'sawtooth', 0.3, 0.7); // Deep, sustained sound
+    setTimeout(() => createSound(80, 'sawtooth', 0.3, 0.7), 150); // Second, even deeper tone
+  }, [createSound]);
+
+  const playNewRecordSound = useCallback(() => {
+    createSound(1000, 'sine', 0.1, 0.6); // High, sharp for new record
+    setTimeout(() => createSound(1200, 'sine', 0.1, 0.6), 100);
+    setTimeout(() => createSound(1400, 'sine', 0.1, 0.6), 200);
+  }, [createSound]);
 
   // Game Functions
   const getRandomWord = useCallback(() => {
@@ -131,20 +154,28 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
       textInputRef.current.disabled = true;
     }
 
-    if (quit) {
-      setOverlayTitle(swahiliPhrases.gameQuit);
-      setOverlayMessage(swahiliPhrases.quitMessage);
+    // Check for new high score and play sounds
+    let finalMessage = '';
+    if (!quit) {
+      if (score > highScore) {
+        setHighScore(score);
+        playNewRecordSound(); // Play new record sound
+        finalMessage = `${swahiliPhrases.newRecord}!<br>Alama zako ni: <span style="color:${accentColor}; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!`;
+      } else {
+        playGameOverSound(); // Play game over sound
+        finalMessage = `Alama zako ni: <span style="color:${accentColor}; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!`;
+      }
     } else {
-      setOverlayTitle(swahiliPhrases.gameOver);
-      setOverlayMessage(
-        `Alama zako ni: <span style="color:${accentColor}; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!<br><br>
-        (Your Score: <span style="color:${accentColor}; font-size:1.5em; font-family: 'Press Start 2P', cursive;">${score}</span>!)`
-      );
+      finalMessage = swahiliPhrases.quitMessage;
     }
+
+    setOverlayTitle(quit ? swahiliPhrases.gameQuit : swahiliPhrases.gameOver);
+    setOverlayMessage(finalMessage);
     setStartButtonText(swahiliPhrases.playAgain);
     setShowOverlay(true);
-  }, [score, accentColor, swahiliPhrases]);
+  }, [score, highScore, accentColor, swahiliPhrases, playGameOverSound, playNewRecordSound]);
 
+  // Corrected countdown logic
   const updateGame = useCallback(() => {
     setTimeLeft(prevTime => {
       const newTime = prevTime - 1;
@@ -158,6 +189,7 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
 
   const gameLoop = useCallback(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return; // Add null check for canvas context
     const ctx = canvas.getContext('2d');
     const groundLevel = groundLevelRef.current;
 
@@ -215,17 +247,25 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
     if (!displayedWord) return;
 
     let highlightedHtml = '';
+    let isCorrectPrefix = true;
     for (let i = 0; i < displayedWord.length; i++) {
       if (typedText[i] && typedText[i].toLowerCase() === displayedWord[i].toLowerCase()) {
         highlightedHtml += `<span style="color: yellow;">${displayedWord[i]}</span>`;
       } else if (typedText[i]) {
         highlightedHtml += `<span style="color: red;">${displayedWord[i]}</span>`;
+        isCorrectPrefix = false; // Mark if a mismatch occurs
       } else {
         highlightedHtml += `<span>${displayedWord[i]}</span>`;
       }
     }
     wordDisplayRef.current.innerHTML = highlightedHtml;
-  }, []);
+
+    // Play wrong sound only if a character is typed incorrectly (and input isn't empty)
+    // This prevents sound on backspace or initial empty input
+    if (typedText.length > 0 && !isCorrectPrefix && textInputRef.current.value.length === typedText.length) {
+      playWrongSound();
+    }
+  }, [playWrongSound]);
 
   const showTemporaryMessage = useCallback((message, color) => {
     const gameWrapper = gameWrapperRef.current;
@@ -262,6 +302,9 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
     if (!gameActive) return;
 
     const typedText = textInputRef.current.value.toLowerCase();
+    // Call highlightIncorrectLetters on every input change for immediate feedback
+    highlightIncorrectLetters(typedText);
+
     if (typedText === currentWord) {
       setScore(prevScore => prevScore + currentWord.length);
       vehicle.x += 20; // Move vehicle forward
@@ -272,9 +315,8 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
       playCorrectSound();
       showTemporaryMessage(swahiliPhrases.correctWord, 'green');
       getRandomWord(); // Get next word
-    } else {
-      highlightIncorrectLetters(typedText);
     }
+    // No else here, as highlightIncorrectLetters handles the "wrong" sound on individual character mismatch
   }, [gameActive, currentWord, vehicle, playCorrectSound, showTemporaryMessage, getRandomWord, highlightIncorrectLetters, swahiliPhrases.correctWord]);
 
   const startGame = useCallback(() => {
@@ -290,6 +332,8 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
       textInputRef.current.focus();
     }
     getRandomWord(); // Get the first word of the new session
+    // Make sure to clear any existing interval before setting a new one
+    clearInterval(gameIntervalRef.current);
     gameIntervalRef.current = setInterval(updateGame, 1000);
     gameLoop();
   }, [getRandomWord, updateGame, gameLoop, vehicle]);
@@ -297,7 +341,6 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
   const handleQuitGame = useCallback(() => {
     endGame(true); // Call endGame with 'quit' flag
   }, [endGame]);
-
 
   const resizeCanvas = useCallback(() => {
     const gameWrapper = gameWrapperRef.current;
@@ -316,8 +359,11 @@ const CyberSafariGame = ({ themeColors, onClose }) => {
     canvas.height = gameWrapper.clientHeight - headerHeight - infoHeight - typingAreaHeight;
     groundLevelRef.current = canvas.height * 0.8; // 80% of canvas height for ground
     vehicle.y = groundLevelRef.current - vehicle.height; // Adjust vehicle y position
-    gameLoop(); // Redraw after resize
-  }, [gameLoop, vehicle]);
+    // Only redraw if the game is active, otherwise the initial gameLoop from startGame will draw
+    if (gameActive) { // Add gameActive check here
+        gameLoop();
+    }
+  }, [gameLoop, vehicle, gameActive]); // Add gameActive to dependencies
 
   // Initial setup and resize on component mount
   useEffect(() => {
