@@ -8,7 +8,7 @@ const VEHICLE_HEIGHT = 45; // Slightly smaller vehicle height
 
 const swahiliPhrases = {
     welcomeTitle: "KARIBU CYBER SAFARI!",
-    welcomeMessage: `Jitayarishe kuongeza kasi ya kuandika na ujuzi wako wa kompyuta! Andika maneno ya teknolojia unapoona,
+    welcomeMessage: `Jitayarishe kuongeza kasi ya kuandika na ujuzi wako wa kompyuta! Andika maneno  unapoona,
                     kusaidia gari lako la safari kusonga mbele. Kila neno sahihi huongeza alama zako na kukusogeza mbele.
                     Haraka haraka, na usikose herufi!
                     <br><br>
@@ -266,7 +266,7 @@ const TypingArea = React.memo(({ currentWord, typedInput, handleInput, gameActiv
         <div className="flex flex-col items-center p-4 bg-gray-800 rounded-lg shadow-md mt-4">
             {isLoadingWord ? (
                 <div className="text-xl text-yellow-300 font-semibold mb-4 animate-pulse">
-                    Inapakia neno... (Loading word...)
+                    Loading word... (Loading word...)
                 </div>
             ) : (
                 <>
