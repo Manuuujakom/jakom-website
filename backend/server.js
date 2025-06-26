@@ -3,8 +3,6 @@ const cors = require('cors');
 const axios = require('axios'); // You'll need to install axios: npm install axios
 const app = express();
 
-app.use(cors());
-
 // **IMPORTANT**: This is the Web app URL you got from Google Apps Script.
 // It has been updated with the URL you provided.
 const GOOGLE_APPS_SCRIPT_API_URL = 'https://script.google.com/macros/s/AKfycbw3mJyy7dZj2NqPJ-VWLTUVbpEYGc-FRU9MzxTIV6GguXlIh59PERCmrJx6De43voRt/exec';
@@ -13,6 +11,8 @@ const GOOGLE_APPS_SCRIPT_API_URL = 'https://script.google.com/macros/s/AKfycbw3m
 let cachedPosters = [];
 let lastFetchTime = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // Cache for 5 minutes (adjust as needed)
+
+app.use(cors()); // Allow all CORS for now, will refine later if needed
 
 app.get('/api/posters', async (req, res) => {
   const currentTime = Date.now();
@@ -41,4 +41,6 @@ app.get('/api/posters', async (req, res) => {
   }
 });
 
-app.listen(5000, () => console.log('Backend running on http://localhost:5000'));
+// Use the port provided by the environment (e.g., Render) or default to 5000 for local testing
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
