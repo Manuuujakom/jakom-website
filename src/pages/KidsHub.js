@@ -26,7 +26,7 @@ const KidsHub = () => {
                     <button
                         onClick={() => setShowTypingGame(false)}
                         className="mt-4 px-6 py-2 bg-[#C9B072] text-[#0A1128] font-semibold text-md rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
-                        style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 40 }}
+                        style={{ position: 'absolute', bottom: '1px', left: '50%', transform: 'translateX(-50%)', zIndex: 40 }}
                     >
                         Close Game
                     </button>
