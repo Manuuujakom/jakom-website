@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Cloudinary } from '@cloudinary/url-gen';
+import { AdvancedImage } from '@cloudinary/react';
+import { fill } from '@cloudinary/url-gen/actions/resize'; // Import necessary actions if needed
 
-// OtherPortfolio Component (remains the same)
+// OtherPortfolio Component (No changes needed for this guide)
 const OtherPortfolio = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-4">
@@ -17,7 +20,7 @@ const OtherPortfolio = ({ onBack }) => {
   );
 };
 
-// New VideoEditing Component
+// VideoEditing Component (No changes needed for this guide)
 const VideoEditing = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
@@ -46,37 +49,60 @@ const VideoEditing = ({ onBack }) => {
   );
 };
 
-
 // PosterGallery Component to fetch and display posters
 const PosterGallery = ({ onBack }) => {
   const [posters, setPosters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Initialize Cloudinary
+  const cld = new Cloudinary({
+    cloud: {
+      cloudName: 'desvdirg3' // Replace with your actual Cloudinary Cloud Name
+    }
+  });
+
   useEffect(() => {
-    const fetchPosters = async () => {
+    const fetchCloudinaryPosters = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/posters');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setPosters(data);
-      } catch (error) {
-        console.error("Failed to fetch posters:", error);
-        setError("Failed to load posters. Please ensure the backend is running at http://localhost:5000.");
-      } finally {
+        // In a real application, you'd likely fetch public IDs from a backend API
+        // For demonstration, we'll use a hardcoded array of public IDs.
+        // Make sure these public IDs exist in your Cloudinary account.
+        const publicIds = [
+          { id: '1', publicId: 'samples/landscapes/beach-on-patrol', title: 'Tropical Sunset' },
+          { id: '2', publicId: 'samples/food/pot-roast', title: 'Delicious Pot Roast' },
+          { id: '3', publicId: 'samples/bike', title: 'Mountain Biking' },
+          { id: '4', publicId: 'samples/animals/kitten-playing', title: 'Playful Kitten' },
+          // Add more public IDs as needed
+        ];
+
+        // Map public IDs to Cloudinary image objects
+        const loadedPosters = publicIds.map(item => ({
+          id: item.id,
+          title: item.title,
+          // Construct the Cloudinary image object
+          cldImg: cld.image(item.publicId)
+                      .resize(fill().width(300).height(200)) // Apply transformations
+                      .quality('auto')
+                      .format('auto')
+        }));
+
+        setPosters(loadedPosters);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to load Cloudinary posters:", err);
+        setError("Failed to load posters. Please check your Cloudinary configuration and public IDs.");
         setLoading(false);
       }
     };
 
-    fetchPosters();
-  }, []); // Empty dependency array means this runs once on mount
+    fetchCloudinaryPosters();
+  }, []);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-8">
-        <p className="text-2xl text-[#CCD2E3]">Loading posters...</p>
+        <p className="text-2xl text-[#CCD2E3]">Loading posters from Cloudinary...</p>
         <button onClick={onBack} className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
           Back to Graphics & Design
         </button>
@@ -104,18 +130,17 @@ const PosterGallery = ({ onBack }) => {
         {posters.length > 0 ? (
           posters.map((poster) => (
             <div key={poster.id} className="bg-[#1C2C59] rounded-xl p-4 shadow-lg border border-[#4CAF50]">
-              <img
-                src={poster.imageUrl}
-                alt={poster.title}
+              <AdvancedImage
+                cldImg={poster.cldImg}
                 className="w-full h-64 object-cover rounded-md mb-4"
-                onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/300x200/0A1128/CCD2E3?text=Image+Not+Found"; }} // Fallback image
+                alt={poster.title}
               />
               <h3 className="text-xl font-bold text-[#F8F8F8] mb-2">{poster.title}</h3>
               <p className="text-[#CCD2E3]">A stunning example of our print design work.</p>
             </div>
           ))
         ) : (
-          <p className="text-xl text-[#CCD2E3] col-span-full">No posters found. Add some to your backend!</p>
+          <p className="text-xl text-[#CCD2E3] col-span-full">No posters found. Please add public IDs to the `PosterGallery` component or configure your backend to provide them.</p>
         )}
       </div>
       <button onClick={onBack} className="px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
@@ -196,7 +221,6 @@ const GraphicsDesign = ({ navigateTo }) => {
             <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Web Design</h3>
             <p className="text-[#CCD2E3]">Visually appealing and user-friendly website interfaces.</p>
         </div>
-        {/* Print & Marketing service item is no longer clickable for posters directly */}
         <div
           className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up"
           style={{ animationDelay: '0.8s' }}
@@ -212,15 +236,12 @@ const GraphicsDesign = ({ navigateTo }) => {
 
 // Main App Component
 const App = () => {
-  // State to manage which page/portfolio is currently displayed
-  const [currentPage, setCurrentPage] = useState('graphicsDesign'); // Default to Graphics & Design
+  const [currentPage, setCurrentPage] = useState('graphicsDesign');
 
-  // Function to navigate to a specific portfolio
   const navigateTo = (page) => {
     setCurrentPage(page);
   };
 
-  // Render content based on the currentPage state
   const renderContent = () => {
     switch (currentPage) {
       case 'graphicsDesign':
