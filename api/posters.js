@@ -1,0 +1,96 @@
+// This file should be located at your-project-root/api/posters.js
+// OR your-project-root/pages/api/posters.js if using Next.js.
+
+// Import the Cloudinary SDK
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary using environment variables for security.
+// !!! IMPORTANT !!!
+// In your Vercel project settings (Environment Variables section):
+// You MUST set these environment variables with your actual Cloudinary credentials:
+// CLOUDINARY_CLOUD_NAME = 'desvdirg3'
+// CLOUDINARY_API_KEY = '385951568625369'
+// CLOUDINARY_API_SECRET = '9juTKNOvK-deQTpc4NLLsr3Drew'
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, // Read from environment variable
+  api_key: process.env.CLOUDINARY_API_KEY,       // Read from environment variable
+  api_secret: process.env.CLOUDINARY_API_SECRET, // Read from environment variable
+  secure: true, // Ensures all URLs are HTTPS
+});
+
+/**
+ * API handler function to fetch posters from Cloudinary.
+ * This function is designed to work as a Node.js serverless API endpoint.
+ *
+ * @param {object} req - The request object (e.g., Vercel's IncomingMessage).
+ * @param {object} res - The response object (e.g., Vercel's ServerResponse).
+ */
+export default async function handler(req, res) {
+  // --- CORS HEADERS ---
+  // Allow requests specifically from your deployed frontend domain.
+  // This is crucial for security and resolving CORS errors.
+  res.setHeader('Access-Control-Allow-Origin', 'https://jakomonestoptechsolution.vercel.app');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight requests for 24 hours
+
+  // Handle preflight requests for CORS (browser sends OPTIONS request first)
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  // --- END CORS HEADERS ---
+
+  try {
+    // Validate Cloudinary configuration immediately
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error("Cloudinary environment variables are not set correctly on the server.");
+      return res.status(500).json({
+        error: "Server configuration error: Cloudinary credentials are missing or incorrect.",
+        details: "Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set as environment variables in your deployment platform."
+      });
+    }
+
+    const folderName = 'portfolio'; // Ensure this is the EXACT name of your folder in Cloudinary
+
+    // Use Cloudinary's Search API for reliable folder querying.
+    // 'folder:"portfolio"' will search specifically in the 'portfolio' folder.
+    // 'folder:"portfolio/*"' would search in the 'portfolio' folder and its direct subfolders.
+    // 'folder:"portfolio/**"' would search in the 'portfolio' folder and all its nested subfolders.
+    const searchResult = await cloudinary.search
+      .expression(`folder:"${folderName}"`)
+      .max_results(100) // Max 500 per request. Adjust as needed.
+      .execute();
+
+    // Check if the Cloudinary API returned valid resources.
+    if (!searchResult || !searchResult.resources || searchResult.resources.length === 0) {
+      console.warn(`No resources found in Cloudinary folder: ${folderName}. This could be due to incorrect folder name, no images in folder, or API key permissions. Cloudinary response:`, searchResult);
+      return res.status(200).json([]);
+    }
+
+    // Map Cloudinary resources to your frontend's expected format.
+    const posters = searchResult.resources.map((resource) => {
+      const fileName = resource.public_id.split('/').pop();
+      const title = fileName
+        .replace(/[-_]/g, ' ')
+        .replace(/\.\w+$/, '')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+      return {
+        id: resource.public_id,
+        imageUrl: resource.secure_url, // HTTPS URL for the image
+        title: title || 'Untitled Poster',
+      };
+    });
+
+    res.status(200).json(posters);
+
+  } catch (error) {
+    console.error('Error fetching posters from Cloudinary:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve posters from Cloudinary. Please check your API configuration and permissions.',
+      details: error.message,
+    });
+  }
+}
