@@ -9,7 +9,7 @@ import { v2 as cloudinary } from 'cloudinary';
 cloudinary.config({
   cloud_name: 'desvdirg3',
   api_key: '385951568625369',
-  api_secret: 'QXWIC',
+  api_secret: '9juTKNOvK-deQTpc4NLLsr5Drew',
   secure: true, // Ensures all URLs are HTTPS
 });
 
