@@ -38,7 +38,8 @@ export default async function handler(req, res) {
       if (!CLOUDINARY_API_SECRET) missingKeys.push('CLOUDINARY_API_SECRET');
 
       console.error(`Cloudinary environment variables are NOT set correctly at runtime. Missing: ${missingKeys.join(', ')}.`);
-      console.error("Debug Values - CLOUD_NAME:", CLOUDINARY_CLOUD_NAME ? 'SET' : 'NOT SET', ", API_KEY:", CLOUDINARY_API_KEY ? 'SET' : 'NOT SET', ", API_SECRET:", CLOUDINARY_API_SECRET ? 'SET' : 'NOT SET'); // Log status of secret for debugging
+      // Log status of secret for debugging (only if not in a highly sensitive production context)
+      console.error("Debug Values - CLOUD_NAME:", CLOUDINARY_CLOUD_NAME ? 'SET' : 'NOT SET', ", API_KEY:", CLOUDINARY_API_KEY ? 'SET' : 'NOT SET', ", API_SECRET:", CLOUDINARY_API_SECRET ? 'SET' : 'NOT SET');
 
       return res.status(500).json({
         error: "Server configuration error: Cloudinary credentials are missing or incorrect during execution.",
@@ -59,16 +60,35 @@ export default async function handler(req, res) {
 
     console.log(`Attempting to search Cloudinary for folder: ${folderName}`);
 
+    // --- DEEPER DEBUGGING: Test a direct public fetch ---
+    // This fetch does NOT use your API key, just your cloud name and a known public ID.
+    // If this works, it means the network connection from Vercel to Cloudinary is okay
+    // and the problem is purely with your API key/secret authentication.
+    // If this fails, it indicates a deeper network or firewall issue.
+    const testImageUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/sample.jpg`;
+    console.log(`Testing direct fetch from Cloudinary: ${testImageUrl}`);
+    try {
+        const testResponse = await fetch(testImageUrl);
+        if (testResponse.ok) {
+            console.log("Direct public Cloudinary image fetch test PASSED.");
+        } else {
+            console.error(`Direct public Cloudinary image fetch test FAILED. Status: ${testResponse.status}, Text: ${await testResponse.text()}`);
+        }
+    } catch (fetchError) {
+        console.error("Direct public Cloudinary image fetch threw an error:", fetchError);
+    }
+    // --- END DEEPER DEBUGGING ---
+
     const searchResult = await cloudinary.search
       .expression(`folder:"${folderName}"`)
       .max_results(100)
       .execute();
 
     // Log the raw search result for debugging, if successful
-    console.log("Cloudinary Search Result (Success):", JSON.stringify(searchResult, null, 2));
+    console.log("Cloudinary Search Result (Success Path):", JSON.stringify(searchResult, null, 2));
 
     if (!searchResult || !searchResult.resources || searchResult.resources.length === 0) {
-      console.warn(`No resources found in Cloudinary folder: ${folderName}. Cloudinary response:`, searchResult);
+      console.warn(`No resources found in Cloudinary folder: ${folderName}. Cloudinary API response for no resources:`, searchResult);
       return res.status(200).json([]);
     }
 
