@@ -27,10 +27,9 @@ cloudinary.config({
  */
 export default async function handler(req, res) {
   // --- CORS HEADERS START ---
-  // These headers allow your frontend (even if on a different domain/port) to access this API.
-  // For production, replace '*' with your specific deployed frontend domain(s) for better security.
-  // Example: res.setHeader('Access-Control-Allow-Origin', 'https://your-deployed-frontend.com');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Allow requests specifically from your deployed frontend domain.
+  // This is more secure than '*' for production.
+  res.setHeader('Access-Control-Allow-Origin', 'https://jakomonestoptechsolution.vercel.app'); // <--- FIX APPLIED HERE
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
