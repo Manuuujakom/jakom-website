@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Cloudinary } from '@cloudinary/url-gen';
-import { AdvancedImage } from '@cloudinary/react';
-import { fill } from '@cloudinary/url-gen/actions/resize'; // Import necessary actions if needed
+// src/components/GraphicsDesign.js (or GraphicsDesignPage.js)
 
-// OtherPortfolio Component (No changes needed for this guide)
+import React, { useState, useEffect } from 'react';
+
+// OtherPortfolio Component
 const OtherPortfolio = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-4">
@@ -13,14 +12,17 @@ const OtherPortfolio = ({ onBack }) => {
       <p className="text-lg md:text-xl text-[#CCD2E3] text-center mb-10">
         This section is under development. Please check back later!
       </p>
-      <button onClick={onBack} className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
+      <button
+        onClick={onBack}
+        className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
+      >
         Back to Graphics & Design
       </button>
     </div>
   );
 };
 
-// VideoEditing Component (No changes needed for this guide)
+// VideoEditing Component
 const VideoEditing = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
@@ -32,78 +34,78 @@ const VideoEditing = ({ onBack }) => {
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
         <div className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-            <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Edit" alt="Video Editing" className="mb-4 rounded-full p-2" />
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Post-Production</h3>
-            <p className="text-[#CCD2E3]">Seamless editing, color grading, and sound design.</p>
+          <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Edit" alt="Video Editing" className="mb-4 rounded-full p-2" />
+          <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Post-Production</h3>
+          <p className="text-[#CCD2E3]">Seamless editing, color grading, and sound design.</p>
         </div>
         <div className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-            <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Anim" alt="Animation" className="mb-4 rounded-full p-2" />
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Motion Graphics & Animation</h3>
-            <p className="text-[#CCD2E3]">Engaging animated visuals for your videos.</p>
+          <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Anim" alt="Animation" className="mb-4 rounded-full p-2" />
+          <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Motion Graphics & Animation</h3>
+          <p className="text-[#CCD2E3]">Engaging animated visuals for your videos.</p>
         </div>
       </div>
-      <button onClick={onBack} className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+      <button
+        onClick={onBack}
+        className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-fade-in-up"
+        style={{ animationDelay: '0.8s' }}
+      >
         Back to Graphics & Design
       </button>
     </div>
   );
 };
 
-// PosterGallery Component to fetch and display posters
+// PosterGallery Component
 const PosterGallery = ({ onBack }) => {
   const [posters, setPosters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Initialize Cloudinary
-  const cld = new Cloudinary({
-    cloud: {
-      cloudName: 'desvdirg3' // Replace with your actual Cloudinary Cloud Name
-    }
-  });
-
   useEffect(() => {
-    const fetchCloudinaryPosters = async () => {
+    const fetchPosters = async () => {
       try {
-        // In a real application, you'd likely fetch public IDs from a backend API
-        // For demonstration, we'll use a hardcoded array of public IDs.
-        // Make sure these public IDs exist in your Cloudinary account.
-        const publicIds = [
-          { id: '1', publicId: 'samples/landscapes/beach-on-patrol', title: 'Tropical Sunset' },
-          { id: '2', publicId: 'samples/food/pot-roast', title: 'Delicious Pot Roast' },
-          { id: '3', publicId: 'samples/bike', title: 'Mountain Biking' },
-          { id: '4', publicId: 'samples/animals/kitten-playing', title: 'Playful Kitten' },
-          // Add more public IDs as needed
-        ];
+        // Fetch from your local API route (/api/posters) which then connects to your Google Apps Script
+        const response = await fetch('/api/posters');
 
-        // Map public IDs to Cloudinary image objects
-        const loadedPosters = publicIds.map(item => ({
-          id: item.id,
-          title: item.title,
-          // Construct the Cloudinary image object
-          cldImg: cld.image(item.publicId)
-                      .resize(fill().width(300).height(200)) // Apply transformations
-                      .quality('auto')
-                      .format('auto')
-        }));
+        if (!response.ok) {
+          // Attempt to get more specific error message from the response if possible
+          const errorDetail = await response.text(); // Get text to see if it's an error from your server
+          console.error('Error response from /api/posters:', response.status, response.statusText, errorDetail);
+          throw new Error(`HTTP error! status: ${response.status}. Details: ${errorDetail}`);
+        }
+        const data = await response.json();
 
-        setPosters(loadedPosters);
+        // Check if the data indicates an error from the Google Apps Script itself (if doGet returned an error object)
+        if (data && data.error) {
+            throw new Error(`Google Apps Script error: ${data.error}. Details: ${data.details || 'No additional details.'}`);
+        }
+
+        setPosters(data);
         setLoading(false);
       } catch (err) {
-        console.error("Failed to load Cloudinary posters:", err);
-        setError("Failed to load posters. Please check your Cloudinary configuration and public IDs.");
+        console.error("Failed to load posters from API:", err);
+        setError(
+          `Failed to load posters. Please ensure:
+           1. Your /api/posters route is set up correctly and able to fetch from your Google Apps Script.
+           2. Your Google Apps Script is deployed as a web app with 'Anyone' access.
+           3. Your Google Drive folder (as configured in your Apps Script) and its contents are publicly viewable.
+           Error: ${err.message}` // Display the actual error message for debugging
+        );
         setLoading(false);
       }
     };
 
-    fetchCloudinaryPosters();
+    fetchPosters();
   }, []);
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-8">
-        <p className="text-2xl text-[#CCD2E3]">Loading posters from Cloudinary...</p>
-        <button onClick={onBack} className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
+        <p className="text-2xl text-[#CCD2E3]">Loading posters...</p>
+        <button
+          onClick={onBack}
+          className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
+        >
           Back to Graphics & Design
         </button>
       </div>
@@ -112,9 +114,12 @@ const PosterGallery = ({ onBack }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-8">
-        <p className="text-2xl text-red-500 mb-4">{error}</p>
-        <button onClick={onBack} className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
+      <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-8 text-center">
+        <p className="text-2xl text-red-500 mb-4 whitespace-pre-line">{error}</p> {/* Use whitespace-pre-line for multiline error */}
+        <button
+          onClick={onBack}
+          className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
+        >
           Back to Graphics & Design
         </button>
       </div>
@@ -130,8 +135,8 @@ const PosterGallery = ({ onBack }) => {
         {posters.length > 0 ? (
           posters.map((poster) => (
             <div key={poster.id} className="bg-[#1C2C59] rounded-xl p-4 shadow-lg border border-[#4CAF50]">
-              <AdvancedImage
-                cldImg={poster.cldImg}
+              <img
+                src={poster.imageUrl}
                 className="w-full h-64 object-cover rounded-md mb-4"
                 alt={poster.title}
               />
@@ -140,18 +145,20 @@ const PosterGallery = ({ onBack }) => {
             </div>
           ))
         ) : (
-          <p className="text-xl text-[#CCD2E3] col-span-full">No posters found. Please add public IDs to the `PosterGallery` component or configure your backend to provide them.</p>
+          <p className="text-xl text-[#CCD2E3] col-span-full">No posters found. Please ensure your Google Apps Script is correctly configured and your Google Drive folder contains images.</p>
         )}
       </div>
-      <button onClick={onBack} className="px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90">
+      <button
+        onClick={onBack}
+        className="px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
+      >
         Back to Graphics & Design
       </button>
     </div>
   );
 };
 
-
-// GraphicsDesign Component (now includes the portfolio selector)
+// GraphicsDesign Component (main component for this section)
 const GraphicsDesign = ({ navigateTo }) => {
   const [showPortfolioMenu, setShowPortfolioMenu] = useState(false);
 
@@ -179,7 +186,6 @@ const GraphicsDesign = ({ navigateTo }) => {
           {/* Portfolio Options Menu (Dropdown) */}
           {showPortfolioMenu && (
             <div className="absolute top-full mt-2 right-0 bg-[#1C2C59] text-[#F8F8F8] rounded-xl shadow-xl w-64 overflow-hidden z-30 animate-fade-in-down">
-              {/* Removed Graphics & Design from dropdown as it's the default view */}
               <button
                 onClick={() => { navigateTo('posterGallery'); setShowPortfolioMenu(false); }}
                 className="block w-full text-left px-6 py-4 text-lg hover:bg-[#0A1128] border-b border-[#2A3A69] transition duration-200 rounded-t-xl"
@@ -212,29 +218,29 @@ const GraphicsDesign = ({ navigateTo }) => {
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-4xl">
         <div className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-            <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Logo" alt="Logo Design" className="mb-4 rounded-full p-2" />
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Logo & Branding</h3>
-            <p className="text-[#CCD2E3]">Create a memorable brand identity from the ground up.</p>
+          <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Logo" alt="Logo Design" className="mb-4 rounded-full p-2" />
+          <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Logo & Branding</h3>
+          <p className="text-[#CCD2E3]">Create a memorable brand identity from the ground up.</p>
         </div>
         <div className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-            <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Web" alt="Web Design" className="mb-4 rounded-full p-2" />
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Web Design</h3>
-            <p className="text-[#CCD2E3]">Visually appealing and user-friendly website interfaces.</p>
+          <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Web" alt="Web Design" className="mb-4 rounded-full p-2" />
+          <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Web Design</h3>
+          <p className="text-[#CCD2E3]">Visually appealing and user-friendly website interfaces.</p>
         </div>
         <div
           className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up"
           style={{ animationDelay: '0.8s' }}
         >
-            <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Print" alt="Print Design" className="mb-4 rounded-full p-2" />
-            <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Print & Marketing</h3>
-            <p className="text-[#CCD2E3]">Brochures, flyers, business cards, and more. <span className="text-[#C9B072] font-semibold">(Select from 'View Portfolios')</span></p>
+          <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Print" alt="Print Design" className="mb-4 rounded-full p-2" />
+          <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Print & Marketing</h3>
+          <p className="text-[#CCD2E3]">Brochures, flyers, business cards, and more. <span className="text-[#C9B072] font-semibold">(Select from 'View Portfolios')</span></p>
         </div>
       </div>
     </div>
   );
 };
 
-// Main App Component
+// Main App Component (for overall navigation within this file)
 const App = () => {
   const [currentPage, setCurrentPage] = useState('graphicsDesign');
 
