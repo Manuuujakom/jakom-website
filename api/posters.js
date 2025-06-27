@@ -7,7 +7,7 @@ import { v2 as cloudinary } from 'cloudinary';
 // Configure Cloudinary using environment variables for security.
 // !!! IMPORTANT !!!
 // In your Vercel project settings (Environment Variables section):
-// You MUST set these environment variables with your actual Cloudinary credentials:
+// You MUST set these environment variables for "Production" AND "Preview" (or "All Environments"):
 // CLOUDINARY_CLOUD_NAME = 'desvdirg3'
 // CLOUDINARY_API_KEY = '385951568625369'
 // CLOUDINARY_API_SECRET = '9juTKNOvK-deQTpc4NLLsr3Drew'
@@ -27,24 +27,9 @@ cloudinary.config({
  */
 export default async function handler(req, res) {
   // --- CORS HEADERS ---
-  // Allow requests from your primary deployed frontend domain AND the Vercel preview domain.
-  // This is crucial for security and resolving CORS errors.
-  const allowedOrigins = [
-    'https://jakomonestoptechsolution.vercel.app', // Your main deployed domain
-    'https://jakom-one-stop-tech-solution-igmvoynqm.vercel.app' // Your preview deployment domain (from screenshot)
-    // Add any other specific domains if needed, e.g., 'https://your-custom-domain.com'
-  ];
-
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    // Fallback or explicit block for disallowed origins (optional, depending on security needs)
-    // For now, if origin is not in allowedOrigins, it will simply not set the header,
-    // which will cause browser to block if strict CORS rules are in place.
-    // Alternatively, you could explicitly set it to a known origin or block.
-  }
-
+  // To allow access from ANY origin (for public viewing by all users).
+  // IMPORTANT: For APIs handling sensitive user data, restrict this to specific domains.
+  res.setHeader('Access-Control-Allow-Origin', '*'); // <--- CHANGED TO WILDCARD FOR PUBLIC ACCESS
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight requests for 24 hours
@@ -61,28 +46,22 @@ export default async function handler(req, res) {
       console.error("Cloudinary environment variables are not set correctly on the server.");
       return res.status(500).json({
         error: "Server configuration error: Cloudinary credentials are missing or incorrect.",
-        details: "Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set as environment variables in your deployment platform."
+        details: "Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set as environment variables for Production AND Preview environments in your deployment platform."
       });
     }
 
     const folderName = 'portfolio'; // Ensure this is the EXACT name of your folder in Cloudinary
 
-    // Use Cloudinary's Search API for reliable folder querying.
-    // 'folder:"portfolio"' will search specifically in the 'portfolio' folder.
-    // 'folder:"portfolio/*"' would search in the 'portfolio' folder and its direct subfolders.
-    // 'folder:"portfolio/**"' would search in the 'portfolio' folder and all its nested subfolders.
     const searchResult = await cloudinary.search
       .expression(`folder:"${folderName}"`)
-      .max_results(100) // Max 500 per request. Adjust as needed.
+      .max_results(100)
       .execute();
 
-    // Check if the Cloudinary API returned valid resources.
     if (!searchResult || !searchResult.resources || searchResult.resources.length === 0) {
       console.warn(`No resources found in Cloudinary folder: ${folderName}. This could be due to incorrect folder name, no images in folder, or API key permissions. Cloudinary response:`, searchResult);
       return res.status(200).json([]);
     }
 
-    // Map Cloudinary resources to your frontend's expected format.
     const posters = searchResult.resources.map((resource) => {
       const fileName = resource.public_id.split('/').pop();
       const title = fileName
@@ -94,7 +73,7 @@ export default async function handler(req, res) {
 
       return {
         id: resource.public_id,
-        imageUrl: resource.secure_url, // HTTPS URL for the image
+        imageUrl: resource.secure_url,
         title: title || 'Untitled Poster',
       };
     });
