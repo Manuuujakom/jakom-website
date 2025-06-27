@@ -10,7 +10,7 @@ import { v2 as cloudinary } from 'cloudinary';
 cloudinary.config({
   cloud_name: 'desvdirg3',
   api_key: '385951568625369',
-  api_secret: '9juTKNOvK-deQTpc4NLLsr5Drew',
+  api_secret: '9juTKNOvK-deQTpc4NLLsr3Drew',
   secure: true, // Ensures all URLs are HTTPS
 });
 
@@ -23,6 +23,19 @@ cloudinary.config({
  * @param {object} res - The response object (e.g., NextApiResponse or Express Response).
  */
 export default async function handler(req, res) {
+  // --- CORS HEADERS START ---
+  // These headers allow your frontend (even if on a different domain/port) to access this API.
+  // For production, replace '*' with your specific frontend domain(s) for better security.
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Consider replacing '*' with your deployed frontend URL
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight requests for CORS
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  // --- CORS HEADERS END ---
+
   try {
     // --- IMPORTANT: Ensure 'portfolio' is the EXACT name of your folder in Cloudinary ---
     const folderName = 'portfolio';
