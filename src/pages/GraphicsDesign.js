@@ -64,13 +64,15 @@ const PosterGallery = ({ onBack }) => {
   useEffect(() => {
     const fetchPosters = async () => {
       try {
-        // Determine the API base URL based on the environment
-        // **IMPORTANT**: Replace 'https://jakomonestoptechsolution.vercel.app/' with your ACTUAL deployed frontend URL
+        // Determine the API base URL based on the environment.
+        // For 'production', this will use the REACT_APP_API_BASE_URL environment variable.
+        // If not set, it will default to your specific Vercel frontend domain.
+        // For 'development', it remains an empty string for relative paths.
         const apiBaseUrl = process.env.NODE_ENV === 'production'
-          ? process.env.REACT_APP_API_BASE_URL || 'https://jakomonestoptechsolution.vercel.app/' // <<<<<<<<< UPDATED THIS LINE
+          ? process.env.REACT_APP_API_BASE_URL || 'https://jakomonestoptechsolution.vercel.app' // <<<<< Ensure this matches your deployed FE domain exactly, NO trailing slash
           : ''; // For local development, an empty string means a relative path (e.g., /api/posters)
 
-        // Construct the full API URL
+        // Construct the full API URL. No double slashes if apiBaseUrl ends with a slash.
         const apiUrl = `${apiBaseUrl}/api/posters`;
 
         console.log(`Fetching posters from: ${apiUrl}`); // Log the URL for debugging
