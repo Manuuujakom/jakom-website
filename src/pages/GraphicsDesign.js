@@ -64,32 +64,40 @@ const PosterGallery = ({ onBack }) => {
   useEffect(() => {
     const fetchPosters = async () => {
       try {
-        // Fetch from your local API route (/api/posters) which then connects to your Google Apps Script
+        // Fetch from your local API route (/api/posters)
         const response = await fetch('/api/posters');
 
         if (!response.ok) {
-          // Attempt to get more specific error message from the response if possible
-          const errorDetail = await response.text(); // Get text to see if it's an error from your server
+          const errorDetail = await response.text(); // Get raw text to see server's error
           console.error('Error response from /api/posters:', response.status, response.statusText, errorDetail);
-          throw new Error(`HTTP error! status: ${response.status}. Details: ${errorDetail}`);
+          throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorDetail.substring(0, 100)}...`);
         }
-        const data = await response.json();
 
-        // Check if the data indicates an error from the Google Apps Script itself (if doGet returned an error object)
+        // Check content type before parsing JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const rawResponse = await response.text();
+            console.error(`Expected JSON from /api/posters, but received content type: ${contentType || 'none'}. Raw response: ${rawResponse.substring(0, 100)}...`);
+            throw new Error(`Invalid response format from server. Expected JSON, got ${contentType}.`);
+        }
+
+        const data = await response.json(); // Attempt to parse as JSON
+
+        // Assuming your /api/posters will return an array of posters directly
+        // If your server sends an error object (e.g., { error: "message" }), you can still check for it
         if (data && data.error) {
-            throw new Error(`Google Apps Script error: ${data.error}. Details: ${data.details || 'No additional details.'}`);
+            throw new Error(`Server error: ${data.error}. Details: ${data.details || 'No additional details.'}`);
         }
-
+        
         setPosters(data);
         setLoading(false);
       } catch (err) {
         console.error("Failed to load posters from API:", err);
         setError(
           `Failed to load posters. Please ensure:
-           1. Your /api/posters route is set up correctly and able to fetch from your Google Apps Script.
-           2. Your Google Apps Script is deployed as a web app with 'Anyone' access.
-           3. Your Google Drive folder (as configured in your Apps Script) and its contents are publicly viewable.
-           Error: ${err.message}` // Display the actual error message for debugging
+            1. Your /api/posters route is set up correctly on the server.
+            2. The /api/posters route can successfully fetch data from Cloudinary.
+            Error: ${err.message}` // Display the actual error message for debugging
         );
         setLoading(false);
       }
@@ -101,7 +109,7 @@ const PosterGallery = ({ onBack }) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-8">
-        <p className="text-2xl text-[#CCD2E3]">Loading posters...</p>
+        <p className="text-2xl text-[#CCD2E3]">Loading posters from Cloudinary...</p>
         <button
           onClick={onBack}
           className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
@@ -115,7 +123,7 @@ const PosterGallery = ({ onBack }) => {
   if (error) {
     return (
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-8 text-center">
-        <p className="text-2xl text-red-500 mb-4 whitespace-pre-line">{error}</p> {/* Use whitespace-pre-line for multiline error */}
+        <p className="text-2xl text-red-500 mb-4 whitespace-pre-line">{error}</p>
         <button
           onClick={onBack}
           className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
@@ -145,7 +153,7 @@ const PosterGallery = ({ onBack }) => {
             </div>
           ))
         ) : (
-          <p className="text-xl text-[#CCD2E3] col-span-full">No posters found. Please ensure your Google Apps Script is correctly configured and your Google Drive folder contains images.</p>
+          <p className="text-xl text-[#CCD2E3] col-span-full">No posters found. Please ensure your Cloudinary setup is correct and contains images.</p>
         )}
       </div>
       <button
