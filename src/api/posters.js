@@ -3,14 +3,17 @@
 // Import the Cloudinary SDK
 import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary using your provided credentials
-// IMPORTANT: In a production environment, it is highly recommended to store these
-// credentials in environment variables (e.g., in a .env file or server configuration)
-// rather than hardcoding them directly in the code for security reasons.
+// Configure Cloudinary using environment variables for security.
+// !!! IMPORTANT !!!
+// In your deployment environment (e.g., Vercel, Netlify, Render, AWS Lambda):
+// You MUST set these environment variables with your actual Cloudinary credentials:
+// CLOUDINARY_CLOUD_NAME = 'desvdirg3'
+// CLOUDINARY_API_KEY = '385951568625369'
+// CLOUDINARY_API_SECRET = '9juTKNOvK-deQTpc4NLLsr3Drew'
 cloudinary.config({
-  cloud_name: 'desvdirg3',
-  api_key: '385951568625369',
-  api_secret: '9juTKNOvK-deQTpc4NLLsr3Drew',
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, // Read from environment variable
+  api_key: process.env.CLOUDINARY_API_KEY,       // Read from environment variable
+  api_secret: process.env.CLOUDINARY_API_SECRET, // Read from environment variable
   secure: true, // Ensures all URLs are HTTPS
 });
 
@@ -25,12 +28,13 @@ cloudinary.config({
 export default async function handler(req, res) {
   // --- CORS HEADERS START ---
   // These headers allow your frontend (even if on a different domain/port) to access this API.
-  // For production, replace '*' with your specific frontend domain(s) for better security.
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Consider replacing '*' with your deployed frontend URL
+  // For production, replace '*' with your specific deployed frontend domain(s) for better security.
+  // Example: res.setHeader('Access-Control-Allow-Origin', 'https://your-deployed-frontend.com');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight requests for CORS
+  // Handle preflight requests for CORS (browser sends OPTIONS request first)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -38,10 +42,18 @@ export default async function handler(req, res) {
 
   try {
     // --- IMPORTANT: Ensure 'portfolio' is the EXACT name of your folder in Cloudinary ---
-    const folderName = 'portfolio';
+    const folderName = 'portfolio'; // This remains constant as it's your specific folder name
+
+    // Validate Cloudinary configuration if using environment variables
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      console.error("Cloudinary environment variables are not set correctly.");
+      return res.status(500).json({
+        error: "Server configuration error: Cloudinary credentials are missing.",
+        details: "Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set as environment variables."
+      });
+    }
 
     // Use Cloudinary's Search API for more reliable folder querying.
-    // This allows you to specify the folder directly.
     // 'folder:"portfolio"' will search specifically in the 'portfolio' folder.
     // 'folder:"portfolio/*"' would search in the 'portfolio' folder and its direct subfolders.
     // 'folder:"portfolio/**"' would search in the 'portfolio' folder and all its nested subfolders.
@@ -54,7 +66,7 @@ export default async function handler(req, res) {
 
     // Check if the Cloudinary API returned valid resources.
     if (!searchResult || !searchResult.resources || searchResult.resources.length === 0) {
-      console.warn(`No resources found in Cloudinary folder: ${folderName}`);
+      console.warn(`No resources found in Cloudinary folder: ${folderName}. This could be due to incorrect folder name, no images in folder, or API key permissions.`);
       return res.status(200).json([]);
     }
 
