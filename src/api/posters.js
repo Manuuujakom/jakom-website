@@ -1,97 +1,51 @@
-// This file should be located at your-project-root/api/posters.js
-// OR your-project-root/pages/api/posters.js if using Next.js.
+// C:\Users\ADMIN\Desktop\kobilo\jakom-website\src\api\posters.js
 
 // Import the Cloudinary SDK
 import { v2 as cloudinary } from 'cloudinary';
 
+// Configure Cloudinary using your provided credentials
+// IMPORTANT: In a production environment, it is highly recommended to store these
+// credentials in environment variables (e.g., in a .env file or server configuration)
+// rather than hardcoding them directly in the code for security reasons.
+cloudinary.config({
+  cloud_name: 'desvdirg3',
+  api_key: '385951568625369',
+  api_secret: '9juTKNOvK-deQTpc4NLLsr5Drew',
+  secure: true, // Ensures all URLs are HTTPS
+});
+
 /**
  * API handler function to fetch posters from Cloudinary.
- * This function is designed to work as a Node.js serverless API endpoint.
+ * This function is designed to work as a Node.js API endpoint (e.g., in Next.js API routes,
+ * or as a handler in an Express.js route).
  *
- * @param {object} req - The request object (e.g., Vercel's IncomingMessage).
- * @param {object} res - The response object (e.g., Vercel's ServerResponse).
+ * @param {object} req - The request object (e.g., NextApiRequest or Express Request).
+ * @param {object} res - The response object (e.g., NextApiResponse or Express Response).
  */
 export default async function handler(req, res) {
-  // --- CORS HEADERS ---
-  res.setHeader('Access-Control-Allow-Origin', '*'); // For public access
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight requests for 24 hours
-
-  // Handle preflight requests for CORS (browser sends OPTIONS request first)
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  // --- END CORS HEADERS ---
-
-  // Define Cloudinary credentials inside the handler to ensure process.env is fully loaded.
-  const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
-  const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
-  const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
-
   try {
-    // Validate Cloudinary configuration during execution
-    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
-      const missingKeys = [];
-      if (!CLOUDINARY_CLOUD_NAME) missingKeys.push('CLOUDINARY_CLOUD_NAME');
-      if (!CLOUDINARY_API_KEY) missingKeys.push('CLOUDINARY_API_KEY');
-      if (!CLOUDINARY_API_SECRET) missingKeys.push('CLOUDINARY_API_SECRET');
-
-      console.error(`Cloudinary environment variables are NOT set correctly at runtime. Missing: ${missingKeys.join(', ')}.`);
-      // Log status of secret for debugging (only if not in a highly sensitive production context)
-      console.error("Debug Values - CLOUD_NAME:", CLOUDINARY_CLOUD_NAME ? 'SET' : 'NOT SET', ", API_KEY:", CLOUDINARY_API_KEY ? 'SET' : 'NOT SET', ", API_SECRET:", CLOUDINARY_API_SECRET ? 'SET' : 'NOT SET');
-
-      return res.status(500).json({
-        error: "Server configuration error: Cloudinary credentials are missing or incorrect during execution.",
-        details: "Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set as environment variables for Production AND Preview environments in your deployment platform.",
-        missingEnvVars: missingKeys
-      });
-    }
-
-    // Configure Cloudinary *after* validating env vars are present.
-    cloudinary.config({
-      cloud_name: CLOUDINARY_CLOUD_NAME,
-      api_key: CLOUDINARY_API_KEY,
-      api_secret: CLOUDINARY_API_SECRET,
-      secure: true, // Ensures all URLs are HTTPS
-    });
-
+    // --- IMPORTANT: Ensure 'portfolio' is the EXACT name of your folder in Cloudinary ---
     const folderName = 'portfolio';
 
-    console.log(`Attempting to search Cloudinary for folder: ${folderName}`);
-
-    // --- DEEPER DEBUGGING: Test a direct public fetch ---
-    // This fetch does NOT use your API key, just your cloud name and a known public ID.
-    // If this works, it means the network connection from Vercel to Cloudinary is okay
-    // and the problem is purely with your API key/secret authentication.
-    // If this fails, it indicates a deeper network or firewall issue.
-    const testImageUrl = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/sample.jpg`;
-    console.log(`Testing direct fetch from Cloudinary: ${testImageUrl}`);
-    try {
-        const testResponse = await fetch(testImageUrl);
-        if (testResponse.ok) {
-            console.log("Direct public Cloudinary image fetch test PASSED.");
-        } else {
-            console.error(`Direct public Cloudinary image fetch test FAILED. Status: ${testResponse.status}, Text: ${await testResponse.text()}`);
-        }
-    } catch (fetchError) {
-        console.error("Direct public Cloudinary image fetch threw an error:", fetchError);
-    }
-    // --- END DEEPER DEBUGGING ---
-
+    // Use Cloudinary's Search API for more reliable folder querying.
+    // This allows you to specify the folder directly.
+    // 'folder:"portfolio"' will search specifically in the 'portfolio' folder.
+    // 'folder:"portfolio/*"' would search in the 'portfolio' folder and its direct subfolders.
+    // 'folder:"portfolio/**"' would search in the 'portfolio' folder and all its nested subfolders.
     const searchResult = await cloudinary.search
-      .expression(`folder:"${folderName}"`)
-      .max_results(100)
+      .expression(`folder:"${folderName}"`) // Search specifically in the 'portfolio' folder
+      // .expression(`folder:"${folderName}/*"`) // Uncomment this to include direct subfolders
+      // .expression(`folder:"${folderName}/**"`) // Uncomment this to include all nested subfolders
+      .max_results(100) // Set the maximum number of images to retrieve (max 500 per request)
       .execute();
 
-    // Log the raw search result for debugging, if successful
-    console.log("Cloudinary Search Result (Success Path):", JSON.stringify(searchResult, null, 2));
-
+    // Check if the Cloudinary API returned valid resources.
     if (!searchResult || !searchResult.resources || searchResult.resources.length === 0) {
-      console.warn(`No resources found in Cloudinary folder: ${folderName}. Cloudinary API response for no resources:`, searchResult);
+      console.warn(`No resources found in Cloudinary folder: ${folderName}`);
       return res.status(200).json([]);
     }
 
+    // Map the Cloudinary resource objects to the format expected by your frontend.
     const posters = searchResult.resources.map((resource) => {
       const fileName = resource.public_id.split('/').pop();
       const title = fileName
@@ -108,17 +62,16 @@ export default async function handler(req, res) {
       };
     });
 
+    // Send the transformed posters array as a JSON response with a 200 OK status.
     res.status(200).json(posters);
 
   } catch (error) {
-    // Log the full error object for comprehensive debugging
-    console.error('CRITICAL ERROR fetching posters from Cloudinary (full error object):', error);
+    // Log any errors that occur during the fetch process.
+    console.error('Error fetching posters from Cloudinary:', error);
+    // Send a 500 Internal Server Error response with error details.
     res.status(500).json({
-      error: `Failed to retrieve posters from Cloudinary. Check API configuration/permissions. Debug info: ${error.message || 'No specific error message provided by Cloudinary SDK.'}`,
-      details: error.message || 'Unknown error. Check Vercel logs for full error object.',
-      // Adding Cloudinary's specific error details if available
-      cloudinaryError: error.http_code ? { http_code: error.http_code, message: error.message, code: error.code, name: error.name } : undefined,
-      fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)) // Attempt to stringify entire error object
+      error: 'Failed to retrieve posters. Please check your Cloudinary configuration, folder name, and API permissions.',
+      details: error.message,
     });
   }
 }
