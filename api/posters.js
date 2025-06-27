@@ -43,7 +43,7 @@ export default async function handler(req, res) {
   try {
     // Validate Cloudinary configuration immediately
     if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-      console.error("Cloudinary environment variables are not set correctly on the server.");
+      console.error("Cloudinary environment variables are NOT set correctly on the server. Values received: CLOUD_NAME:", process.env.CLOUDINARY_CLOUD_NAME ? 'SET' : 'NOT SET', ", API_KEY:", process.env.CLOUDINARY_API_KEY ? 'SET' : 'NOT SET'); // Log status, not secret
       return res.status(500).json({
         error: "Server configuration error: Cloudinary credentials are missing or incorrect.",
         details: "Please ensure CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are set as environment variables for Production AND Preview environments in your deployment platform."
@@ -52,10 +52,17 @@ export default async function handler(req, res) {
 
     const folderName = 'portfolio'; // Ensure this is the EXACT name of your folder in Cloudinary
 
+    // Add more detailed logging before the Cloudinary API call
+    console.log(`Attempting to search Cloudinary for folder: ${folderName}`);
+
     const searchResult = await cloudinary.search
       .expression(`folder:"${folderName}"`)
       .max_results(100)
       .execute();
+
+    // Log the raw search result for debugging
+    console.log("Cloudinary Search Result:", JSON.stringify(searchResult, null, 2));
+
 
     if (!searchResult || !searchResult.resources || searchResult.resources.length === 0) {
       console.warn(`No resources found in Cloudinary folder: ${folderName}. This could be due to incorrect folder name, no images in folder, or API key permissions. Cloudinary response:`, searchResult);
@@ -81,10 +88,11 @@ export default async function handler(req, res) {
     res.status(200).json(posters);
 
   } catch (error) {
-    console.error('Error fetching posters from Cloudinary:', error);
+    // Log the full error object for comprehensive debugging
+    console.error('CRITICAL ERROR fetching posters from Cloudinary:', error);
     res.status(500).json({
-      error: 'Failed to retrieve posters from Cloudinary. Please check your API configuration and permissions.',
-      details: error.message,
+      error: 'Failed to retrieve posters from Cloudinary. Please check your API configuration and permissions, and examine deployment logs for full details.',
+      details: error.message, // Provide the specific error message from the catch block
     });
   }
 }
