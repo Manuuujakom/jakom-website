@@ -1,11 +1,4 @@
 {
-  "functions": {
-    "src/api/posters.js": {
-      "runtime": "@vercel/node@2.x", 
-      "memory": 1024, 
-      "maxDuration": 10 
-    }
-  },
   "rewrites": [
     {
       "source": "/api/posters",
