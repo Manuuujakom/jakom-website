@@ -4,12 +4,13 @@
 import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary using your provided credentials
-// It's generally better practice to store these in environment variables (e.g., .env file)
-// but for direct implementation based on your request, we'll hardcode them here.
+// IMPORTANT: In a production environment, it is highly recommended to store these
+// credentials in environment variables (e.g., in a .env file or server configuration)
+// rather than hardcoding them directly in the code for security reasons.
 cloudinary.config({
   cloud_name: 'desvdirg3',
-  api_key: '385951568625369',
-  api_secret: '9juTKNOvK-deQTpc4NLLsr5Drew',
+  api_key: '377262618343588',
+  api_secret: 'i6SSZi71MIHOFtY_mwYA1FXEapg',
   secure: true, // Ensures all URLs are HTTPS
 });
 
@@ -24,7 +25,8 @@ cloudinary.config({
 export default async function handler(req, res) {
   try {
     // --- IMPORTANT: Replace 'YOUR_CLOUDINARY_FOLDER_NAME' with your actual folder name ---
-    const folderName = 'portfolio';
+    // Make sure this folder exists in your Cloudinary account and contains images.
+    const folderName = 'portfolio'; // Assuming 'portfolio' is your actual folder based on mock data public_ids
 
     // Fetch resources (images) from the specified folder in your Cloudinary account.
     // 'type: upload' refers to assets uploaded to Cloudinary.
@@ -45,8 +47,8 @@ export default async function handler(req, res) {
       return res.status(200).json([]);
     }
 
-    // Map the Cloudinary resource objects to the format expected by GraphicsDesign.js.
-    // GraphicsDesign.js expects an array of objects with 'id', 'imageUrl', and 'title'.
+    // Map the Cloudinary resource objects to the format expected by your frontend.
+    // The frontend expects an array of objects with 'id', 'imageUrl', and 'title'.
     const posters = result.resources.map((resource) => {
       // Extract a more human-readable title from the public_id.
       // public_id is typically 'folder/filename_extension'. We extract the filename.
