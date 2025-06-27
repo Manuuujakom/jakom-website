@@ -27,9 +27,24 @@ cloudinary.config({
  */
 export default async function handler(req, res) {
   // --- CORS HEADERS ---
-  // Allow requests specifically from your deployed frontend domain.
+  // Allow requests from your primary deployed frontend domain AND the Vercel preview domain.
   // This is crucial for security and resolving CORS errors.
-  res.setHeader('Access-Control-Allow-Origin', 'https://jakomonestoptechsolution.vercel.app');
+  const allowedOrigins = [
+    'https://jakomonestoptechsolution.vercel.app', // Your main deployed domain
+    'https://jakom-one-stop-tech-solution-igmvoynqm.vercel.app' // Your preview deployment domain (from screenshot)
+    // Add any other specific domains if needed, e.g., 'https://your-custom-domain.com'
+  ];
+
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    // Fallback or explicit block for disallowed origins (optional, depending on security needs)
+    // For now, if origin is not in allowedOrigins, it will simply not set the header,
+    // which will cause browser to block if strict CORS rules are in place.
+    // Alternatively, you could explicitly set it to a known origin or block.
+  }
+
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight requests for 24 hours
