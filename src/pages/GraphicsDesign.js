@@ -65,11 +65,9 @@ const PosterGallery = ({ onBack }) => {
     const fetchPosters = async () => {
       try {
         // Determine the API base URL based on the environment
-        // In a Next.js environment, process.env.NODE_ENV is 'development' or 'production'
-        // For other React setups, you might use a specific environment variable
-        // Make sure to set REACT_APP_API_BASE_URL in your deployment environment
+        // **IMPORTANT**: Replace 'https://jakom-one-stop-tech-solution-1ja8vgth.vercel.app' with your ACTUAL deployed frontend URL
         const apiBaseUrl = process.env.NODE_ENV === 'production'
-          ? process.env.REACT_APP_API_BASE_URL || 'https://YOUR_DEPLOYED_FRONTEND_DOMAIN.COM' // Replace this placeholder!
+          ? process.env.REACT_APP_API_BASE_URL || 'https://jakom-one-stop-tech-solution-1ja8vgth.vercel.app' // <<<<<<<<< UPDATED THIS LINE
           : ''; // For local development, an empty string means a relative path (e.g., /api/posters)
 
         // Construct the full API URL
