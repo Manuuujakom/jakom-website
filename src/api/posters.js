@@ -9,8 +9,8 @@ import { v2 as cloudinary } from 'cloudinary';
 // rather than hardcoding them directly in the code for security reasons.
 cloudinary.config({
   cloud_name: 'desvdirg3',
-  api_key: '377262618343588',
-  api_secret: 'i6SSZi71MIHOFtY_mwYA1FXEapg',
+  api_key: '385951568625369',
+  api_secret: '9juTKNOvK-deQTpc4NLLsr5Drew',
   secure: true, // Ensures all URLs are HTTPS
 });
 
@@ -24,46 +24,41 @@ cloudinary.config({
  */
 export default async function handler(req, res) {
   try {
-    // --- IMPORTANT: Replace 'YOUR_CLOUDINARY_FOLDER_NAME' with your actual folder name ---
-    // Make sure this folder exists in your Cloudinary account and contains images.
-    const folderName = 'portfolio'; // Assuming 'portfolio' is your actual folder based on mock data public_ids
+    // --- IMPORTANT: Ensure 'portfolio' is the EXACT name of your folder in Cloudinary ---
+    const folderName = 'portfolio';
 
-    // Fetch resources (images) from the specified folder in your Cloudinary account.
-    // 'type: upload' refers to assets uploaded to Cloudinary.
-    // 'prefix: folderName + /' ensures we only get assets directly within that folder.
-    // 'max_results: 100' sets the maximum number of images to retrieve (adjust as needed, max 500 per request).
-    const result = await cloudinary.api.resources({
-      type: 'upload',
-      prefix: folderName + '/',
-      max_results: 100,
-      // You can add more options here, like 'tags: true' if you use tags for filtering,
-      // or 'asset_type: image' to ensure only images are returned.
-    });
+    // Use Cloudinary's Search API for more reliable folder querying.
+    // This allows you to specify the folder directly.
+    // 'folder:"portfolio"' will search specifically in the 'portfolio' folder.
+    // 'folder:"portfolio/*"' would search in the 'portfolio' folder and its direct subfolders.
+    // 'folder:"portfolio/**"' would search in the 'portfolio' folder and all its nested subfolders.
+    const searchResult = await cloudinary.search
+      .expression(`folder:"${folderName}"`) // Search specifically in the 'portfolio' folder
+      // .expression(`folder:"${folderName}/*"`) // Uncomment this to include direct subfolders
+      // .expression(`folder:"${folderName}/**"`) // Uncomment this to include all nested subfolders
+      .max_results(100) // Set the maximum number of images to retrieve (max 500 per request)
+      .execute();
 
     // Check if the Cloudinary API returned valid resources.
-    if (!result || !result.resources || result.resources.length === 0) {
+    if (!searchResult || !searchResult.resources || searchResult.resources.length === 0) {
       console.warn(`No resources found in Cloudinary folder: ${folderName}`);
-      // If no resources, return an empty array or a specific message, but still a 200 OK.
       return res.status(200).json([]);
     }
 
     // Map the Cloudinary resource objects to the format expected by your frontend.
-    // The frontend expects an array of objects with 'id', 'imageUrl', and 'title'.
-    const posters = result.resources.map((resource) => {
-      // Extract a more human-readable title from the public_id.
-      // public_id is typically 'folder/filename_extension'. We extract the filename.
+    const posters = searchResult.resources.map((resource) => {
       const fileName = resource.public_id.split('/').pop();
       const title = fileName
-        .replace(/[-_]/g, ' ') // Replace hyphens and underscores with spaces
-        .replace(/\.\w+$/, '') // Remove file extension
-        .split(' ') // Split by spaces
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word
-        .join(' '); // Join back with spaces
+        .replace(/[-_]/g, ' ')
+        .replace(/\.\w+$/, '')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 
       return {
-        id: resource.public_id, // Unique identifier for the poster (Cloudinary's public_id)
-        imageUrl: resource.secure_url, // HTTPS URL for the image
-        title: title || 'Untitled Poster', // Use the derived title, or a default
+        id: resource.public_id,
+        imageUrl: resource.secure_url,
+        title: title || 'Untitled Poster',
       };
     });
 
@@ -75,7 +70,7 @@ export default async function handler(req, res) {
     console.error('Error fetching posters from Cloudinary:', error);
     // Send a 500 Internal Server Error response with error details.
     res.status(500).json({
-      error: 'Failed to retrieve posters. Please check your Cloudinary configuration and folder name.',
+      error: 'Failed to retrieve posters. Please check your Cloudinary configuration, folder name, and API permissions.',
       details: error.message,
     });
   }
