@@ -65,9 +65,9 @@ const PosterGallery = ({ onBack }) => {
     const fetchPosters = async () => {
       try {
         // Determine the API base URL based on the environment
-        // **IMPORTANT**: Replace 'https://jakom-one-stop-tech-solution-1ja8vgth.vercel.app' with your ACTUAL deployed frontend URL
+        // **IMPORTANT**: Replace 'https://jakomonestoptechsolution.vercel.app/' with your ACTUAL deployed frontend URL
         const apiBaseUrl = process.env.NODE_ENV === 'production'
-          ? process.env.REACT_APP_API_BASE_URL || 'https://jakom-one-stop-tech-solution-1ja8vgth.vercel.app' // <<<<<<<<< UPDATED THIS LINE
+          ? process.env.REACT_APP_API_BASE_URL || 'https://jakomonestoptechsolution.vercel.app/' // <<<<<<<<< UPDATED THIS LINE
           : ''; // For local development, an empty string means a relative path (e.g., /api/posters)
 
         // Construct the full API URL
