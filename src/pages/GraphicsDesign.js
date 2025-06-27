@@ -64,27 +64,36 @@ const PosterGallery = ({ onBack }) => {
   useEffect(() => {
     const fetchPosters = async () => {
       try {
-        // Fetch from your local API route (/api/posters)
-        const response = await fetch('/api/posters');
+        // Determine the API base URL based on the environment
+        // In a Next.js environment, process.env.NODE_ENV is 'development' or 'production'
+        // For other React setups, you might use a specific environment variable
+        // Make sure to set REACT_APP_API_BASE_URL in your deployment environment
+        const apiBaseUrl = process.env.NODE_ENV === 'production'
+          ? process.env.REACT_APP_API_BASE_URL || 'https://YOUR_DEPLOYED_FRONTEND_DOMAIN.COM' // Replace this placeholder!
+          : ''; // For local development, an empty string means a relative path (e.g., /api/posters)
+
+        // Construct the full API URL
+        const apiUrl = `${apiBaseUrl}/api/posters`;
+
+        console.log(`Fetching posters from: ${apiUrl}`); // Log the URL for debugging
+
+        const response = await fetch(apiUrl);
 
         if (!response.ok) {
-          const errorDetail = await response.text(); // Get raw text to see server's error
-          console.error('Error response from /api/posters:', response.status, response.statusText, errorDetail);
+          const errorDetail = await response.text();
+          console.error('Error response from API:', response.status, response.statusText, errorDetail);
           throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorDetail.substring(0, 100)}...`);
         }
 
-        // Check content type before parsing JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const rawResponse = await response.text();
-            console.error(`Expected JSON from /api/posters, but received content type: ${contentType || 'none'}. Raw response: ${rawResponse.substring(0, 100)}...`);
+            console.error(`Expected JSON from API, but received content type: ${contentType || 'none'}. Raw response: ${rawResponse.substring(0, 100)}...`);
             throw new Error(`Invalid response format from server. Expected JSON, got ${contentType}.`);
         }
 
-        const data = await response.json(); // Attempt to parse as JSON
+        const data = await response.json();
 
-        // Assuming your /api/posters will return an array of posters directly
-        // If your server sends an error object (e.g., { error: "message" }), you can still check for it
         if (data && data.error) {
             throw new Error(`Server error: ${data.error}. Details: ${data.details || 'No additional details.'}`);
         }
@@ -95,9 +104,10 @@ const PosterGallery = ({ onBack }) => {
         console.error("Failed to load posters from API:", err);
         setError(
           `Failed to load posters. Please ensure:
-            1. Your /api/posters route is set up correctly on the server.
-            2. The /api/posters route can successfully fetch data from Cloudinary.
-            Error: ${err.message}` // Display the actual error message for debugging
+            1. Your backend API (e.g., /api/posters) is deployed and accessible.
+            2. For deployed environments, 'REACT_APP_API_BASE_URL' environment variable is set correctly to your frontend's domain (e.g., https://your-deployed-app.com).
+            3. CORS headers are correctly configured on your backend to allow requests from your frontend's domain.
+            Error: ${err.message}`
         );
         setLoading(false);
       }
