@@ -26,7 +26,7 @@ const OtherPortfolio = ({ onBack }) => {
 const VideoEditing = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
-      <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6 animate-fade-in-up">
+      <h1 className="text-5xl md::text-6xl font-extrabold text-[#C9B072] mb-6 animate-fade-in-up">
         Video Editing & Production
       </h1>
       <p className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
@@ -64,14 +64,13 @@ const PosterGallery = ({ onBack }) => {
   useEffect(() => {
     const fetchPosters = async () => {
       try {
-        // CORRECTED: Construct the API URL.
-        // On Vercel, the backend will be accessible via /api/posters due to vercel.json routes.
-        // REACT_APP_API_BASE_URL is generally left empty for relative paths when frontend
-        // and backend are deployed together in one Vercel project.
-        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || ''; 
-        const apiUrl = `${apiBaseUrl}/api/posters`; // Removed '/src/api/'
+        // This is the correct way to call your backend API endpoint.
+        // For Vercel, if src/api/posters.js is a serverless function,
+        // it will be accessible at /api/posters.
+        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || '';
+        const apiUrl = `${apiBaseUrl}/api/posters`; // Points to your backend API handler
 
-        console.log(`Fetching posters from: ${apiUrl}`); // Log the URL for debugging
+        console.log(`Fetching posters from: ${apiUrl}`); // For debugging
 
         const response = await fetch(apiUrl);
 
@@ -93,7 +92,7 @@ const PosterGallery = ({ onBack }) => {
         if (data && data.error) {
             throw new Error(`Server error: ${data.error}. Details: ${data.details || 'No additional details.'}`);
         }
-        
+
         setPosters(data);
         setLoading(false);
       } catch (err) {
@@ -102,7 +101,8 @@ const PosterGallery = ({ onBack }) => {
           `Failed to load posters. Please ensure:
             1. Your backend API (/api/posters) is deployed and accessible.
             2. If you are using 'REACT_APP_API_BASE_URL', it is set correctly.
-            3. CORS headers are correctly configured on your backend to allow requests from your frontend's domain.
+            3. CORS headers are correctly configured on your backend to allow requests from your frontend's domain (if on different origins).
+            4. Your Cloudinary environment variables are set correctly on the backend.
             Error: ${err.message}`
         );
         setLoading(false);
@@ -115,7 +115,7 @@ const PosterGallery = ({ onBack }) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-8">
-        <p className="text-2xl text-[#CCD2E3]">Loading posters from Cloudinary...</p>
+        <p className="text-2xl text-[#CCD2E3]">Loading posters from Cloudinary via API...</p>
         <button
           onClick={onBack}
           className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
@@ -159,7 +159,7 @@ const PosterGallery = ({ onBack }) => {
             </div>
           ))
         ) : (
-          <p className="text-xl text-[#CCD2E3] col-span-full">No posters found. Please ensure your Cloudinary setup is correct and contains images.</p>
+          <p className="text-xl text-[#CCD2E3] col-span-full">No posters found. Please ensure your Cloudinary setup is correct and contains images in the specified folder.</p>
         )}
       </div>
       <button
