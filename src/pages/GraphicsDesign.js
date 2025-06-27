@@ -1,4 +1,4 @@
-// src/components/GraphicsDesign.js (or GraphicsDesignPage.js)
+// src/pages/GraphicsDesign.js
 
 import React, { useState, useEffect } from 'react';
 
@@ -64,16 +64,12 @@ const PosterGallery = ({ onBack }) => {
   useEffect(() => {
     const fetchPosters = async () => {
       try {
-        // Determine the API base URL based on the environment.
-        // For 'production', this will use the REACT_APP_API_BASE_URL environment variable.
-        // If not set, it will default to your specific Vercel frontend domain.
-        // For 'development', it remains an empty string for relative paths.
-        const apiBaseUrl = process.env.NODE_ENV === 'production'
-          ? process.env.REACT_APP_API_BASE_URL || 'https://jakomonestoptechsolution.vercel.app' // <<<<< Ensure this matches your deployed FE domain exactly, NO trailing slash
-          : ''; // For local development, an empty string means a relative path (e.g., /api/posters)
-
-        // Construct the full API URL. No double slashes if apiBaseUrl ends with a slash.
-        const apiUrl = `${apiBaseUrl}/api/posters`;
+        // CORRECTED: Construct the API URL.
+        // On Vercel, the backend will be accessible via /api/posters due to vercel.json routes.
+        // REACT_APP_API_BASE_URL is generally left empty for relative paths when frontend
+        // and backend are deployed together in one Vercel project.
+        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || ''; 
+        const apiUrl = `${apiBaseUrl}/api/posters`; // Removed '/src/api/'
 
         console.log(`Fetching posters from: ${apiUrl}`); // Log the URL for debugging
 
@@ -82,14 +78,14 @@ const PosterGallery = ({ onBack }) => {
         if (!response.ok) {
           const errorDetail = await response.text();
           console.error('Error response from API:', response.status, response.statusText, errorDetail);
-          throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorDetail.substring(0, 100)}...`);
+          throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorDetail.substring(0, 200)}...`);
         }
 
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const rawResponse = await response.text();
-            console.error(`Expected JSON from API, but received content type: ${contentType || 'none'}. Raw response: ${rawResponse.substring(0, 100)}...`);
-            throw new Error(`Invalid response format from server. Expected JSON, got ${contentType}.`);
+            console.error(`Expected JSON from API, but received content type: ${contentType || 'none'}. Raw response: ${rawResponse.substring(0, 200)}...`);
+            throw new Error(`Invalid response format from server. Expected JSON, got ${contentType}. Raw: ${rawResponse.substring(0, 50)}...`);
         }
 
         const data = await response.json();
@@ -104,8 +100,8 @@ const PosterGallery = ({ onBack }) => {
         console.error("Failed to load posters from API:", err);
         setError(
           `Failed to load posters. Please ensure:
-            1. Your backend API (e.g., /api/posters) is deployed and accessible.
-            2. For deployed environments, 'REACT_APP_API_BASE_URL' environment variable is set correctly to your frontend's domain (e.g., https://your-deployed-app.com).
+            1. Your backend API (/api/posters) is deployed and accessible.
+            2. If you are using 'REACT_APP_API_BASE_URL', it is set correctly.
             3. CORS headers are correctly configured on your backend to allow requests from your frontend's domain.
             Error: ${err.message}`
         );
