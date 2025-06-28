@@ -1,4 +1,4 @@
-// src/pages/GraphicsDesign.js
+// src/pages/GraphicsDesign.js or src/App.js (depending on where you integrate this)
 
 import React, { useState, useEffect } from 'react';
 
@@ -64,11 +64,9 @@ const PosterGallery = ({ onBack }) => {
   useEffect(() => {
     const fetchPosters = async () => {
       try {
-        // This is the correct way to call your backend API endpoint.
-        // For Vercel, if src/api/posters.js is a serverless function,
-        // it will be accessible at /api/posters.
-        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || '';
-        const apiUrl = `${apiBaseUrl}/api/posters`; // Points to your backend API handler
+        // --- ADJUSTED: Now fetches from /api/posters ---
+        // Ensure your Vercel serverless function is named 'posters.js' inside the 'api' directory.
+        const apiUrl = '/api/posters'; // Changed from '/api/photos' to '/api/posters'
 
         console.log(`Fetching posters from: ${apiUrl}`); // For debugging
 
@@ -76,33 +74,41 @@ const PosterGallery = ({ onBack }) => {
 
         if (!response.ok) {
           const errorDetail = await response.text();
-          console.error('Error response from API:', response.status, response.statusText, errorDetail);
+          console.error('Error response from backend API:', response.status, response.statusText, errorDetail);
           throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorDetail.substring(0, 200)}...`);
         }
 
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const rawResponse = await response.text();
-            console.error(`Expected JSON from API, but received content type: ${contentType || 'none'}. Raw response: ${rawResponse.substring(0, 200)}...`);
+            console.error(`Expected JSON from backend, but received content type: ${contentType || 'none'}. Raw response: ${rawResponse.substring(0, 200)}...`);
             throw new Error(`Invalid response format from server. Expected JSON, got ${contentType}. Raw: ${rawResponse.substring(0, 50)}...`);
         }
 
-        const data = await response.json();
+        const data = await response.json(); // This data is an array of { public_id, url, width, height, format }
 
         if (data && data.error) {
             throw new Error(`Server error: ${data.error}. Details: ${data.details || 'No additional details.'}`);
         }
 
-        setPosters(data);
+        // --- UPDATED: Map the Cloudinary response to match PosterGallery's expected structure ---
+        const formattedPosters = data.map((item, index) => ({
+          id: item.public_id || `poster-${index}`, // Use public_id as unique key, or fallback
+          imageUrl: item.url, // Cloudinary secure_url
+          title: item.public_id.split('/').pop().replace(/[-_]/g, ' ').replace(/\.\w+$/, '') || 'Untitled Poster', // Extract title from public_id
+          description: `Dimensions: ${item.width}x${item.height}, Format: ${item.format}` // Example description
+        }));
+
+        setPosters(formattedPosters);
         setLoading(false);
       } catch (err) {
         console.error("Failed to load posters from API:", err);
         setError(
           `Failed to load posters. Please ensure:
-            1. Your backend API (/api/posters) is deployed and accessible.
-            2. If you are using 'REACT_APP_API_BASE_URL', it is set correctly.
-            3. CORS headers are correctly configured on your backend to allow requests from your frontend's domain (if on different origins).
-            4. Your Cloudinary environment variables are set correctly on the backend.
+            1. Your Vercel serverless function (e.g., at /api/posters) is deployed and accessible.
+            2. If developing locally, ensure you are running 'vercel dev' or a similar local server for your API.
+            3. CORS headers are correctly configured on your backend to allow requests from your frontend's domain.
+            4. Your Cloudinary environment variables are correctly set on Vercel.
             Error: ${err.message}`
         );
         setLoading(false);
@@ -153,9 +159,14 @@ const PosterGallery = ({ onBack }) => {
                 src={poster.imageUrl}
                 className="w-full h-64 object-cover rounded-md mb-4"
                 alt={poster.title}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = `https://placehold.co/400x300/1C2C59/F8F8F8?text=Image+Not+Found`;
+                  console.error(`Failed to load poster image: ${poster.imageUrl}`);
+                }}
               />
               <h3 className="text-xl font-bold text-[#F8F8F8] mb-2">{poster.title}</h3>
-              <p className="text-[#CCD2E3]">A stunning example of our print design work.</p>
+              <p className="text-[#CCD2E3]">{poster.description || 'A stunning example of our print design work.'}</p>
             </div>
           ))
         ) : (
