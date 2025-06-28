@@ -6,12 +6,24 @@ import React, { useState, useEffect } from 'react';
 const OtherPortfolio = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-4">
+      {/* Top Back Button */}
+      <div className="w-full flex justify-start mb-8 max-w-3xl"> {/* Added container for alignment */}
+        <button
+          onClick={onBack}
+          className="px-6 py-2 bg-[#C9B072] text-[#0A1128] font-semibold text-base rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
+        >
+          &larr; Back to Graphics & Design
+        </button>
+      </div>
+
       <h1 className="text-4xl md:text-5xl font-extrabold text-[#C9B072] mb-8 text-center">
         Other Portfolio
       </h1>
       <p className="text-lg md:text-xl text-[#CCD2E3] text-center mb-10">
         This section is under development. Please check back later!
       </p>
+
+      {/* Bottom Back Button */}
       <button
         onClick={onBack}
         className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
@@ -26,6 +38,17 @@ const OtherPortfolio = ({ onBack }) => {
 const VideoEditing = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
+      {/* Top Back Button */}
+      <div className="w-full flex justify-start mb-12 md:mb-16 max-w-4xl"> {/* Adjusted margin for spacing */}
+        <button
+          onClick={onBack}
+          className="px-6 py-2 bg-[#C9B072] text-[#0A1128] font-semibold text-base rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-fade-in-up"
+          style={{ animationDelay: '0.1s' }} // Slight delay to match other animations
+        >
+          &larr; Back to Graphics & Design
+        </button>
+      </div>
+
       <h1 className="text-5xl md:text-6xl font-extrabold text-[#C9B072] mb-6 animate-fade-in-up">
         Video Editing & Production
       </h1>
@@ -44,6 +67,7 @@ const VideoEditing = ({ onBack }) => {
           <p className="text-[#CCD2E3]">Engaging animated visuals for your videos.</p>
         </div>
       </div>
+      {/* Bottom Back Button */}
       <button
         onClick={onBack}
         className="mt-12 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-fade-in-up"
@@ -88,7 +112,7 @@ const PosterGallery = ({ onBack }) => {
         if (data && data.error) {
             throw new Error(`Server error: ${data.error}. Details: ${data.details || 'No additional details.'}`);
         }
-        
+
         setPosters(data);
         setLoading(false);
       } catch (err) {
@@ -109,7 +133,17 @@ const PosterGallery = ({ onBack }) => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-8">
+        {/* Top Back Button (Loading State) */}
+        <div className="w-full flex justify-start mb-8 max-w-5xl">
+          <button
+            onClick={onBack}
+            className="px-6 py-2 bg-[#C9B072] text-[#0A1128] font-semibold text-base rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
+          >
+            &larr; Back to Graphics & Design
+          </button>
+        </div>
         <p className="text-2xl text-[#CCD2E3]">Loading posters from Cloudinary...</p>
+        {/* Bottom Back Button (Loading State) */}
         <button
           onClick={onBack}
           className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
@@ -123,7 +157,17 @@ const PosterGallery = ({ onBack }) => {
   if (error) {
     return (
       <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-8 text-center">
+        {/* Top Back Button (Error State) */}
+        <div className="w-full flex justify-start mb-8 max-w-5xl">
+          <button
+            onClick={onBack}
+            className="px-6 py-2 bg-[#C9B072] text-[#0A1128] font-semibold text-base rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
+          >
+            &larr; Back to Graphics & Design
+          </button>
+        </div>
         <p className="text-2xl text-red-500 mb-4 whitespace-pre-line">{error}</p>
+        {/* Bottom Back Button (Error State) */}
         <button
           onClick={onBack}
           className="mt-8 px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
@@ -136,6 +180,16 @@ const PosterGallery = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center text-center">
+      {/* Top Back Button */}
+      <div className="w-full flex justify-start mb-8 max-w-5xl">
+        <button
+          onClick={onBack}
+          className="px-6 py-2 bg-[#C9B072] text-[#0A1128] font-semibold text-base rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
+        >
+          &larr; Back to Graphics & Design
+        </button>
+      </div>
+
       <h2 className="text-4xl md:text-5xl font-extrabold text-[#C9B072] mb-8">
         Our Poster Portfolio
       </h2>
@@ -156,6 +210,7 @@ const PosterGallery = ({ onBack }) => {
           <p className="text-xl text-[#CCD2E3] col-span-full">No posters found. Please ensure your Cloudinary setup is correct and contains images.</p>
         )}
       </div>
+      {/* Bottom Back Button */}
       <button
         onClick={onBack}
         className="px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
