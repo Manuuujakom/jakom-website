@@ -1,4 +1,4 @@
-# app.py (Python Flask Backend - Conceptual)
+# api/background-remover-backend.py (or app.py for local testing)
 
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
@@ -6,101 +6,133 @@ import os
 import io
 import base64
 from PIL import Image
+import requests # For making HTTP requests to external APIs
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+from dotenv import load_dotenv # For loading environment variables locally
+
+# Load environment variables from .env file (for local development)
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app) # Enable CORS for all routes, allowing frontend to make requests
 
-# --- Configuration (For a real app, use environment variables) ---
-UPLOAD_FOLDER = 'uploads' # Directory to temporarily store uploaded images
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+# Configure CORS - adjust origins in production for security
+CORS(app) # Enable CORS for all routes by default
 
-# Placeholder for processed images (in a real app, these would be stored persistently
-# or generated on-the-fly and returned as bytes)
-PROCESSED_IMAGE_DATA = {}
+# --- Cloudinary Configuration ---
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    secure=True
+)
 
-# --- Helper Functions (Simulated Image Processing) ---
+# --- External API Configuration ---
+# Get your API key from remove.bg after signing up
+REMOVE_BG_API_KEY = os.getenv('REMOVE_BG_API_KEY')
+REMOVE_BG_API_URL = 'https://api.remove.bg/v1.0/removebg'
 
-def simulate_background_removal(image_bytes):
+# --- Helper Functions (Actual Image Processing) ---
+
+def remove_background_api(image_bytes):
     """
-    Simulates background removal.
-    In a real application, you would send image_bytes to a service like remove.bg
-    or use a library like 'rembg' here.
-    For this simulation, we'll just return the original image data,
-    or a placeholder if we had one.
+    Sends image to remove.bg API for background removal.
+    Returns bytes of the processed image.
     """
-    print("Simulating background removal...")
-    # Example: In a real scenario with a library like 'rembg':
-    # from rembg import remove
-    # output_bytes = remove(image_bytes)
-    # return output_bytes
-    return image_bytes # Returning original bytes as a placeholder
+    if not REMOVE_BG_API_KEY:
+        raise ValueError("REMOVE_BG_API_KEY is not set. Cannot perform background removal.")
 
-def simulate_apply_solid_background(image_bytes, color_hex):
+    print("Sending image to remove.bg API for processing...")
+    files = {'image_file': ('image.png', io.BytesIO(image_bytes), 'image/png')}
+    headers = {'X-Api-Key': REMOVE_BG_API_KEY}
+    data = {'size': 'auto'} # 'auto' for best quality, 'preview' for faster but lower quality
+
+    try:
+        response = requests.post(REMOVE_BG_API_URL, files=files, headers=headers, data=data)
+        response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
+
+        # The API returns the image directly if successful
+        return response.content
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling remove.bg API: {e}")
+        # Optionally, raise the exception or return original bytes/error
+        raise Exception(f"Background removal service error: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred during background removal: {e}")
+        raise Exception(f"An unexpected error occurred: {e}")
+
+
+def apply_solid_background(image_bytes, color_hex):
     """
-    Simulates applying a solid color background.
-    In a real app, you'd use Pillow (PIL) to composite the image onto a colored canvas.
+    Applies a solid color background to an image.
+    Expects image_bytes to have transparency after background removal.
     """
-    print(f"Simulating applying solid color background: {color_hex}")
-    # Example using PIL (requires actual image loading and manipulation):
+    print(f"Applying solid color background: {color_hex}")
     try:
         img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
-        # Convert hex to RGB tuple
         r, g, b = int(color_hex[1:3], 16), int(color_hex[3:5], 16), int(color_hex[5:7], 16)
         background = Image.new('RGBA', img.size, (r, g, b, 255))
-        # Composite the image over the background. If the image has an alpha channel,
-        # areas where it's transparent will show the background.
         combined = Image.alpha_composite(background, img)
         output_buffer = io.BytesIO()
         combined.save(output_buffer, format="PNG")
         return output_buffer.getvalue()
     except Exception as e:
-        print(f"Error in simulate_apply_solid_background: {e}")
-        return image_bytes # Fallback to original
+        print(f"Error in apply_solid_background: {e}")
+        raise Exception(f"Failed to apply solid background: {e}")
 
-def simulate_apply_image_background(original_image_bytes, background_image_bytes):
+def apply_image_background(original_image_bytes, background_image_bytes):
     """
-    Simulates applying another image as a background.
-    In a real app, you'd use Pillow (PIL) to composite.
+    Applies another image as a background.
+    Expects original_image_bytes to have transparency.
     """
-    print("Simulating applying image background...")
+    print("Applying image background...")
     try:
         original_img = Image.open(io.BytesIO(original_image_bytes)).convert("RGBA")
         background_img = Image.open(io.BytesIO(background_image_bytes)).convert("RGBA")
 
-        # Resize background to match original image dimensions for simpler composition
         background_img_resized = background_img.resize(original_img.size, Image.LANCZOS)
-
-        # Composite the original image (assuming its background is transparent) over the new background
         combined = Image.alpha_composite(background_img_resized, original_img)
         output_buffer = io.BytesIO()
         combined.save(output_buffer, format="PNG")
         return output_buffer.getvalue()
     except Exception as e:
-        print(f"Error in simulate_apply_image_background: {e}")
-        return original_image_bytes # Fallback to original
+        print(f"Error in apply_image_background: {e}")
+        raise Exception(f"Failed to apply image background: {e}")
 
-def simulate_resize_image(image_bytes, width, height):
+def resize_image(image_bytes, width, height):
     """
-    Simulates resizing an image.
-    Uses Pillow (PIL) for actual resizing.
+    Resizes an image using Pillow.
     """
-    print(f"Simulating resizing image to {width}x{height}")
+    print(f"Resizing image to {width}x{height}")
     try:
         img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
-        if width == 'auto' and height == 'auto': # For 'original' option, no resize needed
-            resized_img = img
-        else:
-            # Maintain aspect ratio if one dimension is 'auto' (though our frontend sends both)
-            # For simplicity, we'll force the dimensions here.
-            resized_img = img.resize((width, height), Image.LANCZOS)
+        
+        # Handle 'auto' or 'original' logic if your frontend sends it this way
+        if width == 'auto' and height == 'auto':
+             resized_img = img # No resize needed for original
+        elif width == 'auto' and height is not None:
+             # Calculate width to maintain aspect ratio
+             original_width, original_height = img.size
+             aspect_ratio = original_width / original_height
+             new_width = int(height * aspect_ratio)
+             resized_img = img.resize((new_width, height), Image.LANCZOS)
+        elif height == 'auto' and width is not None:
+             # Calculate height to maintain aspect ratio
+             original_width, original_height = img.size
+             aspect_ratio = original_height / original_width
+             new_height = int(width * aspect_ratio)
+             resized_img = img.resize((width, new_height), Image.LANCZOS)
+        else: # Both width and height are provided (or forced)
+             resized_img = img.resize((width, height), Image.LANCZOS)
 
         output_buffer = io.BytesIO()
         resized_img.save(output_buffer, format="PNG")
         return output_buffer.getvalue()
     except Exception as e:
-        print(f"Error in simulate_resize_image: {e}")
-        return image_bytes # Fallback to original
+        print(f"Error in resize_image: {e}")
+        raise Exception(f"Failed to resize image: {e}")
+
 
 # --- API Endpoints ---
 
@@ -112,121 +144,160 @@ def upload_image():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    if file:
-        image_id = "uploaded_" + os.urandom(8).hex() # Unique ID for the image
-        file_bytes = file.read() # Read file content once
-        PROCESCESSED_IMAGE_DATA[image_id] = file_bytes # Store original bytes
-        # Return a temporary URL or ID for the frontend to reference
+    try:
+        # Read the image data
+        image_bytes = file.read()
+        
+        # Upload to Cloudinary
+        upload_result = cloudinary.uploader.upload(
+            file=io.BytesIO(image_bytes),
+            folder="jakom-website-images", # Optional: organize uploads in a folder
+            resource_type="image"
+        )
+        
         return jsonify({
             'message': 'Image uploaded successfully!',
-            'image_id': image_id,
-            # In a real app, this would be a URL to the uploaded image:
-            'image_url': f'/api/image/{image_id}'
+            'image_id': upload_result['public_id'], # Use Cloudinary public_id as image_id
+            'image_url': upload_result['secure_url'] # Secure URL from Cloudinary
         }), 200
-    return jsonify({'error': 'Something went wrong during upload'}), 500
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return jsonify({'error': f'Failed to upload image: {e}'}), 500
 
 @app.route('/api/remove-background', methods=['POST'])
 def remove_background():
-    image_id = request.form.get('image_id')
-    if not image_id or image_id not in PROCESCESSED_IMAGE_DATA:
-        # If no image_id, assume a direct file upload for simpler testing
-        if 'image' not in request.files:
-            return jsonify({'error': 'No image_id or image file provided'}), 400
-        original_bytes = request.files['image'].read()
-    else:
-        original_bytes = PROCESCESSED_IMAGE_DATA[image_id]
+    image_url = request.form.get('image_url')
+    if not image_url:
+        return jsonify({'error': 'No image_url provided for background removal'}), 400
 
-    processed_bytes = simulate_background_removal(original_bytes)
-    processed_id = "processed_" + os.urandom(8).hex()
-    PROCESCESSED_IMAGE_DATA[processed_id] = processed_bytes
+    try:
+        # Fetch the image from the provided URL (e.g., from Cloudinary)
+        original_image_response = requests.get(image_url)
+        original_image_response.raise_for_status()
+        original_bytes = original_image_response.content
 
-    return jsonify({
-        'message': 'Background removal simulated successfully!',
-        'image_id': processed_id,
-        'image_url': f'/api/image/{processed_id}'
-    }), 200
+        # Perform background removal
+        processed_bytes = remove_background_api(original_bytes)
+        
+        # Upload processed image to Cloudinary
+        upload_result = cloudinary.uploader.upload(
+            file=io.BytesIO(processed_bytes),
+            folder="jakom-website-processed", # Store processed images in a different folder
+            resource_type="image"
+        )
+        
+        return jsonify({
+            'message': 'Background removed successfully!',
+            'image_url': upload_result['secure_url']
+        }), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 500 # For missing API key
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Failed to fetch image or call background removal API: {e}'}), 500
+    except Exception as e:
+        print(f"Background removal error: {e}")
+        return jsonify({'error': f'Failed to remove background: {e}'}), 500
 
 @app.route('/api/edit-background', methods=['POST'])
 def edit_background():
-    original_image_id = request.form.get('image_id')
-    if not original_image_id or original_image_id not in PROCESCESSED_IMAGE_DATA:
-        # For simplicity, if image_id isn't provided, use 'image' file directly
-        if 'image' not in request.files:
-            return jsonify({'error': 'No image_id or image file provided for editing'}), 400
-        original_bytes = request.files['image'].read()
-    else:
-        original_bytes = PROCESCESSED_IMAGE_DATA[original_image_id]
-
+    image_url = request.form.get('image_url')
     color = request.form.get('color')
     background_file = request.files.get('background_image')
 
-    processed_bytes = None
-    if color:
-        processed_bytes = simulate_apply_solid_background(original_bytes, color)
-    elif background_file:
-        background_bytes = background_file.read()
-        processed_bytes = simulate_apply_image_background(original_bytes, background_bytes)
-    else:
-        return jsonify({'error': 'No color or background image provided'}), 400
+    if not image_url:
+        return jsonify({'error': 'No image_url provided for background editing'}), 400
 
-    if processed_bytes:
-        processed_id = "edited_" + os.urandom(8).hex()
-        PROCESCESSED_IMAGE_DATA[processed_id] = processed_bytes
-        return jsonify({
-            'message': 'Background edited successfully!',
-            'image_id': processed_id,
-            'image_url': f'/api/image/{processed_id}'
-        }), 200
-    return jsonify({'error': 'Background editing failed'}), 500
+    try:
+        # Fetch the original image from the provided URL
+        original_image_response = requests.get(image_url)
+        original_image_response.raise_for_status()
+        original_bytes = original_image_response.content
+
+        processed_bytes = None
+        if color:
+            processed_bytes = apply_solid_background(original_bytes, color)
+        elif background_file:
+            background_bytes = background_file.read()
+            processed_bytes = apply_image_background(original_bytes, background_bytes)
+        else:
+            return jsonify({'error': 'No color or background image provided'}), 400
+
+        if processed_bytes:
+            # Upload processed image to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                file=io.BytesIO(processed_bytes),
+                folder="jakom-website-edited",
+                resource_type="image"
+            )
+            return jsonify({
+                'message': 'Background edited successfully!',
+                'image_url': upload_result['secure_url']
+            }), 200
+        return jsonify({'error': 'Background editing failed due to unknown reason'}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Failed to fetch original image: {e}'}), 500
+    except Exception as e:
+        print(f"Edit background error: {e}")
+        return jsonify({'error': f'Failed to edit background: {e}'}), 500
+
 
 @app.route('/api/resize-image', methods=['POST'])
-def resize_image():
-    image_id = request.form.get('image_id')
-    width = request.form.get('width', type=int)
-    height = request.form.get('height', type=int)
+def resize_image_endpoint(): # Renamed to avoid conflict with helper function
+    image_url = request.form.get('image_url')
+    width_str = request.form.get('width')
+    height_str = request.form.get('height')
 
-    if not image_id or image_id not in PROCESCESSED_IMAGE_DATA:
-        # If image_id isn't provided, use 'image' file directly
-        if 'image' not in request.files:
-            return jsonify({'error': 'No image_id or image file provided for resizing'}), 400
-        original_bytes = request.files['image'].read()
-    else:
-        original_bytes = PROCESCESSED_IMAGE_DATA[image_id]
+    if not image_url:
+        return jsonify({'error': 'No image_url provided for resizing'}), 400
+    
+    # Parse width and height, allowing for 'auto' as a string
+    try:
+        width = int(width_str) if width_str and width_str.lower() != 'auto' else 'auto'
+        height = int(height_str) if height_str and height_str.lower() != 'auto' else 'auto'
+    except ValueError:
+        return jsonify({'error': 'Invalid width or height format. Must be a number or "auto".'}), 400
 
-    if not width or not height:
-        return jsonify({'error': 'Width and height are required for resizing'}), 400
+    if (width == 'auto' and height == 'auto') or (not isinstance(width, int) and not isinstance(height, int)):
+        return jsonify({'error': 'At least one valid dimension (width or height) or both "auto" are required for resizing'}), 400
 
-    processed_bytes = simulate_resize_image(original_bytes, width, height)
-    if processed_bytes:
-        processed_id = "resized_" + os.urandom(8).hex()
-        PROCESCESSED_IMAGE_DATA[processed_id] = processed_bytes
-        return jsonify({
-            'message': 'Image resized successfully!',
-            'image_id': processed_id,
-            'image_url': f'/api/image/{processed_id}'
-        }), 200
-    return jsonify({'error': 'Image resizing failed'}), 500
+    try:
+        # Fetch the original image from the provided URL
+        original_image_response = requests.get(image_url)
+        original_image_response.raise_for_status()
+        original_bytes = original_image_response.content
 
-@app.route('/api/image/<image_id>', methods=['GET'])
-def get_image(image_id):
-    """
-    Endpoint to serve processed images based on their ID.
-    This simulates serving images from a storage solution.
-    """
-    image_bytes = PROCESCESSED_IMAGE_DATA.get(image_id)
-    if image_bytes:
-        # Determine content type (assuming PNG for simplicity after processing)
-        return send_file(io.BytesIO(image_bytes), mimetype='image/png')
-    return jsonify({'error': 'Image not found'}), 404
+        processed_bytes = resize_image(original_bytes, width, height) # Call helper function
+        if processed_bytes:
+            # Upload processed image to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                file=io.BytesIO(processed_bytes),
+                folder="jakom-website-resized",
+                resource_type="image"
+            )
+            return jsonify({
+                'message': 'Image resized successfully!',
+                'image_url': upload_result['secure_url']
+            }), 200
+        return jsonify({'error': 'Image resizing failed due to unknown reason'}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Failed to fetch original image: {e}'}), 500
+    except Exception as e:
+        print(f"Resize image error: {e}")
+        return jsonify({'error': f'Failed to resize image: {e}'}), 500
+
 
 @app.route('/')
 def index():
     return "Image Processing Backend is running!"
 
 if __name__ == '__main__':
-    # To run this Flask app:
-    # 1. Save it as app.py
-    # 2. Make sure you have Flask and Pillow installed: pip install Flask Pillow
-    # 3. Run: python app.py
+    # For local development:
+    # 1. Create a .env file in the same directory as this script.
+    # 2. Add your Cloudinary and remove.bg API keys to the .env file:
+    #    CLOUDINARY_CLOUD_NAME=your_cloud_name
+    #    CLOUDINARY_API_KEY=your_api_key
+    #    CLOUDINARY_API_SECRET=your_api_secret
+    #    REMOVE_BG_API_KEY=your_remove_bg_api_key
+    # 3. Run: python api/background-remover-backend.py
     # This will run on http://127.0.0.1:5000/ by default
     app.run(debug=True) # debug=True is good for development, disable in production
