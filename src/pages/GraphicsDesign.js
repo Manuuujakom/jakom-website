@@ -84,11 +84,12 @@ const PosterGallery = ({ onBack }) => {
   const [posters, setPosters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedPoster, setSelectedPoster] = useState(null); // New state for selected poster
 
   useEffect(() => {
     const fetchPosters = async () => {
       try {
-        // Fetch from your local API route (/api/posters)
+        setLoading(true); // Set loading to true at the start of fetch
         const response = await fetch('/api/posters');
 
         if (!response.ok) {
@@ -97,7 +98,6 @@ const PosterGallery = ({ onBack }) => {
           throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorDetail.substring(0, 100)}...`);
         }
 
-        // Check content type before parsing JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const rawResponse = await response.text();
@@ -105,10 +105,8 @@ const PosterGallery = ({ onBack }) => {
             throw new Error(`Invalid response format from server. Expected JSON, got ${contentType}.`);
         }
 
-        const data = await response.json(); // Attempt to parse as JSON
+        const data = await response.json();
 
-        // Assuming your /api/posters will return an array of posters directly
-        // If your server sends an error object (e.g., { error: "message" }), you can still check for it
         if (data && data.error) {
             throw new Error(`Server error: ${data.error}. Details: ${data.details || 'No additional details.'}`);
         }
@@ -121,14 +119,24 @@ const PosterGallery = ({ onBack }) => {
           `Failed to load posters. Please ensure:
             1. Your /api/posters route is set up correctly on the server.
             2. The /api/posters route can successfully fetch data from Cloudinary.
-            Error: ${err.message}` // Display the actual error message for debugging
+            Error: ${err.message}`
         );
         setLoading(false);
       }
     };
 
     fetchPosters();
-  }, []);
+  }, []); // Empty dependency array means this runs once on component mount (and re-runs on page refresh)
+
+  // Function to open the modal
+  const openPosterModal = (poster) => {
+    setSelectedPoster(poster);
+  };
+
+  // Function to close the modal
+  const closePosterModal = () => {
+    setSelectedPoster(null);
+  };
 
   if (loading) {
     return (
@@ -179,7 +187,7 @@ const PosterGallery = ({ onBack }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center text-center">
+    <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center text-center relative">
       {/* Top Back Button */}
       <div className="w-full flex justify-start mb-8 max-w-5xl">
         <button
@@ -196,14 +204,19 @@ const PosterGallery = ({ onBack }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-5xl mb-12">
         {posters.length > 0 ? (
           posters.map((poster) => (
-            <div key={poster.id} className="bg-[#1C2C59] rounded-xl p-4 shadow-lg border border-[#4CAF50]">
+            <div
+              key={poster.id}
+              className="bg-[#1C2C59] rounded-xl p-4 shadow-lg border border-[#4CAF50] cursor-pointer hover:scale-105 transition-transform duration-200"
+              onClick={() => openPosterModal(poster)} // Click handler to open modal
+            >
               <img
                 src={poster.imageUrl}
                 className="w-full h-64 object-cover rounded-md mb-4"
-                alt={poster.title}
+                alt={poster.title || 'Portfolio Image'} // Fallback alt text
               />
-              <h3 className="text-xl font-bold text-[#F8F8F8] mb-2">{poster.title}</h3>
-              <p className="text-[#CCD2E3]">A stunning example of our print design work.</p>
+              {/* Removed poster title display */}
+              {/* <h3 className="text-xl font-bold text-[#F8F8F8] mb-2">{poster.title}</h3> */}
+              {/* <p className="text-[#CCD2E3]">A stunning example of our print design work.</p> */}
             </div>
           ))
         ) : (
@@ -217,6 +230,34 @@ const PosterGallery = ({ onBack }) => {
       >
         Back to Graphics & Design
       </button>
+
+      {/* Poster Modal */}
+      {selectedPoster && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 p-4"
+          onClick={closePosterModal} // Close modal when clicking outside image
+        >
+          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-lg shadow-lg" onClick={(e) => e.stopPropagation()}> {/* Prevent closing when clicking on the image container */}
+            <button
+              onClick={closePosterModal}
+              className="absolute top-4 right-4 text-white text-3xl font-bold bg-gray-700 bg-opacity-75 rounded-full w-10 h-10 flex items-center justify-center transition hover:bg-red-600 z-10"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <img
+              src={selectedPoster.imageUrl}
+              alt={selectedPoster.title || 'Selected Poster'}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            />
+            {selectedPoster.title && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4 text-white text-lg font-semibold text-center">
+                {selectedPoster.title}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
