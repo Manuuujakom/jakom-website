@@ -8,6 +8,8 @@ const App = () => {
     const [originalImagePreview, setOriginalImagePreview] = useState(null);
     // State for the processed image URL (after background removal/editing)
     const [processedImage, setProcessedImage] = useState(null);
+    // State to store the ID of the image currently being processed on the backend
+    const [currentImageId, setCurrentImageId] = useState(null);
     // State for the selected background color
     const [backgroundColor, setBackgroundColor] = useState('#000000'); // Default to black
     // State for the uploaded background image file
@@ -50,12 +52,44 @@ const App = () => {
     }, [backgroundImage]);
 
     // Handler for original image file input change
-    const handleOriginalImageUpload = (event) => {
+    const handleOriginalImageUpload = async (event) => {
         const file = event.target.files[0];
         if (file && file.type.startsWith('image/')) {
             setOriginalImage(file);
             setProcessedImage(null); // Reset processed image when new original is uploaded
+            setCurrentImageId(null); // Reset current image ID
             setMessage('');
+
+            // Automatically upload the image to the backend upon selection
+            setIsLoading(true);
+            setMessage('Uploading image...');
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    setMessage(result.message);
+                    setCurrentImageId(result.image_id); // Store the ID received from backend
+                    setProcessedImage(result.image_url); // Set preview to the uploaded image
+                } else {
+                    setMessage(`Upload Error: ${result.error}`);
+                    setOriginalImage(null); // Clear the image if upload fails
+                    setOriginalImagePreview(null);
+                }
+            } catch (error) {
+                console.error('Network or server error during upload:', error);
+                setMessage(`Network Error: Could not connect to backend.`);
+                setOriginalImage(null); // Clear the image if upload fails
+                setOriginalImagePreview(null);
+            } finally {
+                setIsLoading(false);
+            }
+
         } else {
             setMessage('Please upload a valid image file (e.g., PNG, JPG).');
         }
@@ -72,99 +106,91 @@ const App = () => {
         }
     };
 
-    // Helper function to simulate API calls
-    const simulateApiCall = async (endpoint, data) => {
-        setIsLoading(true);
-        setMessage(`Processing via ${endpoint}...`);
-        console.log(`Simulating API call to ${endpoint} with data:`, data);
-
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        setIsLoading(false);
-        setMessage(`Operation ${endpoint} completed successfully!`);
-
-        // In a real application, you would make an actual fetch call here:
-        /*
-        try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: data // FormData for files, or JSON.stringify for JSON
-            });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const result = await response.json(); // Or response.blob() for image data
-            setMessage(result.message || 'Operation successful!');
-            return result; // Return processed image URL or data
-        } catch (error) {
-            console.error('API call failed:', error);
-            setMessage(`Error: ${error.message}`);
+    // Helper function to make actual API calls to the Flask backend
+    const makeRealApiCall = async (endpoint, data, isFile = false) => {
+        if (!currentImageId && endpoint !== '/api/upload') {
+            setMessage('Please upload an image first.');
+            setIsLoading(false);
             return null;
         }
-        */
 
-        // For simulation, we'll return a placeholder or a simple transformation
-        let simulatedImageUrl = originalImagePreview; // Start with the original image
+        setIsLoading(true);
+        setMessage(`Processing via ${endpoint}...`);
 
-        if (endpoint === '/api/remove-background') {
-            // Simulate background removal by just showing the original for now,
-            // or a transparent version if we could manipulate pixels directly.
-            // In a real app, the backend would return the URL of the processed image.
-            simulatedImageUrl = originalImagePreview; // Placeholder: original image
-        } else if (endpoint === '/api/edit-background') {
-            // Simulate background change. If a background image is provided, use that.
-            // Otherwise, apply a "color" by showing the original, suggesting a color overlay.
-            if (backgroundImagePreview) {
-                simulatedImageUrl = backgroundImagePreview; // Placeholder: background image
-            } else {
-                simulatedImageUrl = originalImagePreview; // Placeholder: original image with a color implied
-            }
-        } else if (endpoint === '/api/resize-image') {
-            // Simulate resizing. The actual resize would happen on the backend.
-            // For now, just return the current processed image or original.
-            simulatedImageUrl = processedImage || originalImagePreview;
+        let bodyToSend;
+        let headers = {};
+
+        if (isFile) {
+            bodyToSend = data; // FormData for file uploads
+        } else {
+            // For JSON data (like color), if not explicitly FormData
+            bodyToSend = JSON.stringify(data);
+            headers['Content-Type'] = 'application/json';
         }
 
-        setProcessedImage(simulatedImageUrl); // Update the processed image state
-        return { success: true, imageUrl: simulatedImageUrl };
+        try {
+            const response = await fetch(`http://127.0.0.1:5000${endpoint}`, {
+                method: 'POST',
+                headers: isFile ? {} : headers, // FormData sets its own Content-Type
+                body: bodyToSend,
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                setMessage(result.message || 'Operation successful!');
+                if (result.image_id) {
+                    setCurrentImageId(result.image_id); // Update current image ID after processing
+                }
+                if (result.image_url) {
+                    setProcessedImage(result.image_url); // Display the processed image from the backend
+                }
+                return result;
+            } else {
+                setMessage(`Error: ${result.error || 'Something went wrong.'}`);
+                return null;
+            }
+        } catch (error) {
+            console.error('API call failed:', error);
+            setMessage(`Network Error: Could not connect to backend or server issue. ${error.message}`);
+            return null;
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     // Handler for "Remove Background" button click
     const handleRemoveBackground = async () => {
-        if (!originalImage) {
+        if (!currentImageId) {
             setMessage('Please upload an image first.');
             return;
         }
         const formData = new FormData();
-        formData.append('image', originalImage);
-        // In a real app, send formData to backend
-        await simulateApiCall('/api/remove-background', formData);
+        formData.append('image_id', currentImageId); // Send the ID of the image to process
+        await makeRealApiCall('/api/remove-background', formData, true);
     };
 
     // Handler for "Apply Solid Color Background" button click
     const handleApplySolidColor = async () => {
-        if (!originalImage) {
+        if (!currentImageId) {
             setMessage('Please upload an image first.');
             return;
         }
-        const data = {
-            image: originalImage.name, // In real app, send processed image ID/URL
-            color: backgroundColor,
-        };
-        await simulateApiCall('/api/edit-background', data);
+        const formData = new FormData();
+        formData.append('image_id', currentImageId);
+        formData.append('color', backgroundColor);
+        await makeRealApiCall('/api/edit-background', formData, true); // Use FormData for consistency with other file uploads
     };
 
     // Handler for "Apply Image Background" button click
     const handleApplyImageBackground = async () => {
-        if (!originalImage || !backgroundImage) {
-            setMessage('Please upload both an original image and a background image.');
+        if (!currentImageId || !backgroundImage) {
+            setMessage('Please upload an original image (first) and a background image.');
             return;
         }
         const formData = new FormData();
-        formData.append('original_image', originalImage);
+        formData.append('image_id', currentImageId);
         formData.append('background_image', backgroundImage);
-        await simulateApiCall('/api/edit-background', formData);
+        await makeRealApiCall('/api/edit-background', formData, true);
     };
 
     // Handler for "Download Image" button click
@@ -173,6 +199,7 @@ const App = () => {
             setMessage('No image to download. Please process an image first.');
             return;
         }
+        // Direct download using the URL provided by the backend
         const link = document.createElement('a');
         link.href = processedImage;
         link.download = `processed_image_${resizeOption}.png`;
@@ -184,7 +211,7 @@ const App = () => {
 
     // Handler for "Resize Image" button click
     const handleResizeImage = async () => {
-        if (!originalImage) { // Use originalImage as the base for resize simulation
+        if (!currentImageId) {
             setMessage('Please upload an image first to resize.');
             return;
         }
@@ -196,7 +223,7 @@ const App = () => {
             'id_card': { width: 330, height: 210 }, // Example
             'web_thumbnail': { width: 150, height: 150 },
             'social_media': { width: 1080, height: 1080 }, // Instagram square
-            'original': { width: 'auto', height: 'auto' } // Use current size
+            'original': null // No resize, use backend's current image
         };
 
         if (resizeOption === 'custom') {
@@ -209,17 +236,23 @@ const App = () => {
         } else if (commonSizes[resizeOption]) {
             targetWidth = commonSizes[resizeOption].width;
             targetHeight = commonSizes[resizeOption].height;
+        } else if (resizeOption === 'original') {
+             // If "original" is selected, the backend will just return the existing image
+             targetWidth = null; // These won't be used by backend, but keep for clarity
+             targetHeight = null;
         } else {
             setMessage('Please select a valid resize option.');
             return;
         }
 
-        const data = {
-            image: originalImage.name, // In real app, send processed image ID/URL
-            width: targetWidth,
-            height: targetHeight,
-        };
-        await simulateApiCall('/api/resize-image', data);
+        const formData = new FormData();
+        formData.append('image_id', currentImageId);
+        if (targetWidth && targetHeight) { // Only append if it's not 'original'
+            formData.append('width', targetWidth);
+            formData.append('height', targetHeight);
+        }
+
+        await makeRealApiCall('/api/resize-image', formData, true);
     };
 
 
@@ -248,10 +281,10 @@ const App = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
 
-                {/* Card 1: Remove Background */}
+                {/* Card 1: Upload Image */}
                 <div className={`p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
-                    <h2 className={`text-2xl font-semibold mb-4 ${colors.text}`}>Remove Background</h2>
-                    <p className={`mb-4 ${colors.text}`}>Upload an image to remove its background.</p>
+                    <h2 className={`text-2xl font-semibold mb-4 ${colors.text}`}>Upload Image</h2>
+                    <p className={`mb-4 ${colors.text}`}>Select an image from your device to begin processing.</p>
                     <input
                         type="file"
                         accept="image/*"
@@ -262,6 +295,7 @@ const App = () => {
                             file:text-sm file:font-semibold
                             file:${colors.button} file:text-white
                             file:hover:${colors.buttonHover} file:transition-colors file:duration-200`}
+                        disabled={isLoading}
                     />
                     {originalImagePreview && (
                         <div className="mb-4 text-center">
@@ -269,17 +303,29 @@ const App = () => {
                             <img src={originalImagePreview} alt="Original Preview" className="max-w-full h-auto rounded-lg shadow-md mx-auto" />
                         </div>
                     )}
+                </div>
+
+                {/* Card 2: Remove Background */}
+                <div className={`p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
+                    <h2 className={`text-2xl font-semibold mb-4 ${colors.text}`}>Remove Background</h2>
+                    <p className={`mb-4 ${colors.text}`}>Click to remove the background from your uploaded image.</p>
                     <button
                         onClick={handleRemoveBackground}
-                        disabled={!originalImage || isLoading}
+                        disabled={!currentImageId || isLoading}
                         className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
-                                ${(!originalImage || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
+                                ${(!currentImageId || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                     >
                         {isLoading ? 'Processing...' : 'Remove Background'}
                     </button>
+                    {processedImage && (
+                        <div className="mt-6 text-center">
+                            <h3 className={`text-lg font-medium mb-2 ${colors.text}`}>Processed Image Preview:</h3>
+                            <img src={processedImage} alt="Processed Preview" className="max-w-full h-auto rounded-lg shadow-md mx-auto border border-gray-500" />
+                        </div>
+                    )}
                 </div>
 
-                {/* Card 2: Edit Background */}
+                {/* Card 3: Edit Background */}
                 <div className={`p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
                     <h2 className={`text-2xl font-semibold mb-4 ${colors.text}`}>Edit Background</h2>
                     <p className={`mb-4 ${colors.text}`}>Change the background to a solid color or another photo.</p>
@@ -295,13 +341,14 @@ const App = () => {
                                 value={backgroundColor}
                                 onChange={(e) => setBackgroundColor(e.target.value)}
                                 className="w-12 h-12 rounded-full border-2 border-gray-300 cursor-pointer"
+                                disabled={isLoading}
                             />
                             <span className={`${colors.text}`}>{backgroundColor.toUpperCase()}</span>
                             <button
                                 onClick={handleApplySolidColor}
-                                disabled={!originalImage || isLoading}
+                                disabled={!currentImageId || isLoading}
                                 className={`flex-grow py-2 px-4 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
-                                    ${(!originalImage || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
+                                    ${(!currentImageId || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                             >
                                 Apply Color
                             </button>
@@ -318,11 +365,13 @@ const App = () => {
                             ref={backgroundInputRef} // Ref to hide this input
                             onChange={handleBackgroundImageUpload}
                             className="hidden" // Hide the actual input
+                            disabled={isLoading}
                         />
                         <button
                             onClick={() => backgroundInputRef.current.click()} // Trigger click on hidden input
                             className={`w-full py-2 px-4 rounded-full font-semibold transition-all duration-300 mb-2 ${colors.button} ${colors.text} shadow-md
                                 ${isLoading ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
+                            disabled={isLoading}
                         >
                             Select Background Image
                         </button>
@@ -334,16 +383,16 @@ const App = () => {
                         )}
                         <button
                             onClick={handleApplyImageBackground}
-                            disabled={!originalImage || !backgroundImage || isLoading}
+                            disabled={!currentImageId || !backgroundImage || isLoading}
                             className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
-                                ${(!originalImage || !backgroundImage || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
+                                ${(!currentImageId || !backgroundImage || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                         >
                             Apply Image
                         </button>
                     </div>
                 </div>
 
-                {/* Card 3: Resize Image & Download */}
+                {/* Card 4: Resize Image & Download */}
                 <div className={`p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
                     <h2 className={`text-2xl font-semibold mb-4 ${colors.text}`}>Resize & Download</h2>
                     <p className={`mb-4 ${colors.text}`}>Choose a size for your processed image.</p>
@@ -357,6 +406,7 @@ const App = () => {
                             value={resizeOption}
                             onChange={(e) => setResizeOption(e.target.value)}
                             className={`block w-full py-2 px-3 rounded-md shadow-sm border border-gray-600 ${colors.card} ${colors.text}`}
+                            disabled={isLoading}
                         >
                             <option value="original">Original Size</option>
                             <option value="passport">Passport Size (2x2 inches)</option>
@@ -380,6 +430,7 @@ const App = () => {
                                     onChange={(e) => setCustomWidth(e.target.value)}
                                     placeholder="e.g., 800"
                                     className={`block w-full py-2 px-3 rounded-md shadow-sm border border-gray-600 ${colors.card} ${colors.text}`}
+                                    disabled={isLoading}
                                 />
                             </div>
                             <div>
@@ -393,6 +444,7 @@ const App = () => {
                                     onChange={(e) => setCustomHeight(e.target.value)}
                                     placeholder="e.g., 600"
                                     className={`block w-full py-2 px-3 rounded-md shadow-sm border border-gray-600 ${colors.card} ${colors.text}`}
+                                    disabled={isLoading}
                                 />
                             </div>
                         </div>
@@ -400,19 +452,12 @@ const App = () => {
 
                     <button
                         onClick={handleResizeImage}
-                        disabled={!originalImage || isLoading}
+                        disabled={!currentImageId || isLoading}
                         className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 mb-6 ${colors.button} ${colors.text} shadow-md
-                                ${(!originalImage || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
+                                ${(!currentImageId || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                     >
                         {isLoading ? 'Resizing...' : 'Apply Resize'}
                     </button>
-
-                    {processedImage && (
-                        <div className="mb-6 text-center">
-                            <h3 className={`text-lg font-medium mb-2 ${colors.text}`}>Processed Image Preview:</h3>
-                            <img src={processedImage} alt="Processed Preview" className="max-w-full h-auto rounded-lg shadow-md mx-auto border border-gray-500" />
-                        </div>
-                    )}
 
                     <button
                         onClick={handleDownloadImage}
