@@ -17,21 +17,18 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# --- Production Configuration: Explicitly allow your frontend's domain(s) ---
-# It's crucial to specify the exact origins that are allowed to access your API.
-# 'https://jakom-one-stop-tech-solution-jrbtyjzmc.vercel.app' is typically a Vercel preview/branch domain.
-# 'https://jakomonestoptechsolution.vercel.app' is your main production domain.
-# Include both if you want to allow requests from both during development/testing on Vercel.
-CORS(app, resources={r"/api/*": {"origins": [
-    "https://jakom-one-stop-tech-solution-jrbtyjzmc.vercel.app",
-    "https://jakomonestoptechsolution.vercel.app"
-]}})
+# --- Production Configuration: Allowing all origins for CORS ---
+# WARNING: Setting origins to "*" allows ANY domain to make requests to your API.
+# This is a significant security risk for production applications.
+# It is strongly recommended to restrict this to specific frontend domains (e.g., your Vercel URL)
+# as was done in the previous version.
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # --- Cloudinary Configuration ---
 cloudinary.config(
-    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    cloud_name=os.getenv('desvdirg3'),
+    api_key=os.getenv('385951568625369'),
+    api_secret=os.getenv('9juTKNOvK-deQTpc4NLLsr3Drew'),
     secure=True
 )
 
