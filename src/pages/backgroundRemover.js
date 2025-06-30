@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+// Removed unused imports: Phone, MessageSquare, PlaceholderPage
+// If you intend to use these, ensure they are actually rendered or called.
 
 // Define the backend URL directly to your Vercel deployment
 const BACKEND_URL = 'https://jakomonestoptechsolution.vercel.app';
@@ -12,7 +14,7 @@ const App = () => {
     // State for the processed image URL (after background removal/editing)
     const [processedImage, setProcessedImage] = useState(null);
     // State to store the URL of the image currently being processed on the backend (Cloudinary URL)
-    const [currentImageUrl, setCurrentImageUrl] = useState(null); // Renamed from currentImageId for clarity
+    const [currentImageUrl, setCurrentImageUrl] = useState(null);
     // State for the selected background color
     const [backgroundColor, setBackgroundColor] = useState('#000000'); // Default to black
     // State for the uploaded background image file
@@ -38,21 +40,28 @@ const App = () => {
         if (originalImage) {
             const objectUrl = URL.createObjectURL(originalImage);
             setOriginalImagePreview(objectUrl);
-            return () => URL.revokeObjectURL(objectUrl);
+            return () => {
+                // Copy ref.current to a variable inside the effect for cleanup
+                // This resolves the 'ref value will likely have changed' warning
+                URL.revokeObjectURL(objectUrl);
+            };
         } else {
             setOriginalImagePreview(null);
         }
-    }, [originalImage]);
+    }, [originalImage]); // Dependency array is correct here
 
     useEffect(() => {
         if (backgroundImage) {
             const objectUrl = URL.createObjectURL(backgroundImage);
             setBackgroundImagePreview(objectUrl);
-            return () => URL.revokeObjectURL(objectUrl);
+            return () => {
+                // Copy ref.current to a variable inside the effect for cleanup
+                URL.revokeObjectURL(objectUrl);
+            };
         } else {
             setBackgroundImagePreview(null);
         }
-    }, [backgroundImage]);
+    }, [backgroundImage]); // Dependency array is correct here
 
     // Handler for original image file input change - now uploads to backend immediately
     const handleOriginalImageUpload = async (event) => {
@@ -109,8 +118,8 @@ const App = () => {
     };
 
     // Helper function to make actual API calls to the Flask backend
-    const makeRealApiCall = async (endpoint, data, isFile = false) => {
-        if (!currentImageUrl && endpoint !== '/api/upload') { // Ensure image is uploaded for subsequent ops
+    const makeRealApiCall = async (endpoint, data) => { // Removed isFile as FormData is always used
+        if (!currentImageUrl && endpoint !== '/api/upload') {
             setMessage('Please upload an image first.');
             setIsLoading(false);
             return null;
@@ -119,12 +128,11 @@ const App = () => {
         setIsLoading(true);
         setMessage(`Processing via ${endpoint}...`);
 
-        let bodyToSend = new FormData(); // Always use FormData for consistency with backend expecting form data
+        let bodyToSend = new FormData();
         if (currentImageUrl) {
-            bodyToSend.append('image_url', currentImageUrl); // Pass the current Cloudinary URL
+            bodyToSend.append('image_url', currentImageUrl);
         }
 
-        // Append additional data to the FormData object
         if (data instanceof FormData) {
             for (let pair of data.entries()) {
                 bodyToSend.append(pair[0], pair[1]);
@@ -135,19 +143,18 @@ const App = () => {
             }
         }
 
-
         try {
             const response = await fetch(`${BACKEND_URL}${endpoint}`, {
                 method: 'POST',
-                body: bodyToSend, // FormData sets its own Content-Type header
+                body: bodyToSend,
             });
 
             const result = await response.json();
             if (response.ok) {
                 setMessage(result.message || 'Operation successful!');
                 if (result.image_url) {
-                    setCurrentImageUrl(result.image_url); // Update to the new processed Cloudinary URL
-                    setProcessedImage(result.image_url); // Display the new processed image
+                    setCurrentImageUrl(result.image_url);
+                    setProcessedImage(result.image_url);
                 }
                 return result;
             } else {
@@ -169,7 +176,6 @@ const App = () => {
             setMessage('Please upload an image first.');
             return;
         }
-        // No need to create new FormData with image_url as makeRealApiCall already does it
         await makeRealApiCall('/api/remove-background', {});
     };
 
@@ -192,8 +198,8 @@ const App = () => {
             return;
         }
         const formData = new FormData();
-        formData.append('background_image', backgroundImage); // Append only the new background image
-        await makeRealApiCall('/api/edit-background', formData, true); // true indicates it's a file upload
+        formData.append('background_image', backgroundImage);
+        await makeRealApiCall('/api/edit-background', formData);
     };
 
     // Handler for "Download Image" button click
@@ -202,7 +208,6 @@ const App = () => {
             setMessage('No image to download. Please process an image first.');
             return;
         }
-        // Direct download using the URL provided by the backend (Cloudinary URL)
         const link = document.createElement('a');
         link.href = processedImage;
         link.download = `processed_image_${resizeOption}.png`;
@@ -221,11 +226,11 @@ const App = () => {
 
         let targetWidth, targetHeight;
         const commonSizes = {
-            'passport': { width: 413, height: 531 }, // ~2x2 inches at 200dpi
-            'id_card': { width: 330, height: 210 }, // Example
+            'passport': { width: 413, height: 531 },
+            'id_card': { width: 330, height: 210 },
             'web_thumbnail': { width: 150, height: 150 },
-            'social_media': { width: 1080, height: 1080 }, // Instagram square
-            'original': null // No specific resize, backend will return current image
+            'social_media': { width: 1080, height: 1080 },
+            'original': null
         };
 
         if (resizeOption === 'custom') {
@@ -239,7 +244,7 @@ const App = () => {
             targetWidth = commonSizes[resizeOption].width;
             targetHeight = commonSizes[resizeOption].height;
         } else if (resizeOption === 'original') {
-             targetWidth = 'auto'; // Explicitly send 'auto' for backend to interpret as no change
+             targetWidth = 'auto';
              targetHeight = 'auto';
         } else {
             setMessage('Please select a valid resize option.');
@@ -253,16 +258,15 @@ const App = () => {
         await makeRealApiCall('/api/resize-image', data);
     };
 
-
     // Tailwind CSS classes based on the provided image's color scheme
     const colors = {
-        background: 'bg-[#181D31]', // Dark blue/black
-        card: 'bg-[#1D243D]', // Slightly lighter dark blue for cards
-        button: 'bg-[#34A95A]', // Green button
-        buttonHover: 'hover:bg-[#2C8F4B]', // Darker green on hover
+        background: 'bg-[#181D31]',
+        card: 'bg-[#1D243D]',
+        button: 'bg-[#34A95A]',
+        buttonHover: 'hover:bg-[#2C8F4B]',
         text: 'text-gray-100',
-        accent: 'text-yellow-400', // Gold/yellow for icons
-        border: 'border-yellow-400', // Gold border for cards
+        accent: 'text-yellow-400',
+        border: 'border-yellow-400',
     };
 
     return (

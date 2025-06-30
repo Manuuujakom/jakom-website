@@ -1,15 +1,13 @@
 # api/background-remover-backend.py
 
-from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS, cross_origin # Keep cross_origin for clarity, but primarily use after_request
+from flask import Flask, request, jsonify # Removed send_file as we're returning base64
+from flask_cors import CORS # Keep CORS for manual header injection
 import os
 import io
 import base64
 from PIL import Image
 import requests
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
+# Removed cloudinary imports
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,24 +15,11 @@ load_dotenv()
 app = Flask(__name__)
 
 # --- CORS Configuration ---
+# Allowing all origins for debugging CORS issues
 # WARNING: Setting origins to "*" allows ANY domain to make requests to your API.
 # This is a significant security risk for production applications.
 # It is strongly recommended to restrict this to specific frontend domains.
-# However, to force CORS for debugging, we'll use '*' in the after_request.
-# We will remove the Flask-CORS extension initialization (CORS(app))
-# and rely on the manual header injection for all routes.
-# The @cross_origin decorators will also be removed as they might conflict
-# or be redundant with the manual approach.
-
-# Define allowed origins for the Access-Control-Allow-Origin header
-# For debugging, we'll use "*" as requested, but ideally, this should be:
-# ALLOWED_ORIGINS = [
-#     "https://jakom-one-stop-tech-solution-hilu5cvyw.vercel.app",
-#     "https://jakomonestoptechsolution.vercel.app",
-#     "http://localhost:3000"
-# ]
-# For this fix, we'll use "*" to ensure it's not an origin-specific problem.
-CORS_ALLOW_ORIGIN = "*" # Allowing all origins for debugging CORS issues
+CORS_ALLOW_ORIGIN = "*"
 
 @app.after_request
 def add_cors_headers(response):
@@ -45,20 +30,8 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = CORS_ALLOW_ORIGIN
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Credentials'] = 'true' # Important for cookies/auth if used
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
-
-# --- Cloudinary Configuration ---
-# WARNING: Hardcoding API keys directly in the code is a security risk and
-# is NOT recommended for production environments.
-# It is best practice to use environment variables (e.g., os.getenv())
-# and configure them securely in your deployment platform (like Vercel).
-cloudinary.config(
-    cloud_name='desvdirg3',
-    api_key='385951568625369',
-    api_secret='9juTKNOvK-deQTpc4NLLsr3Drew',
-    secure=True
-)
 
 # --- External API Configuration ---
 REMOVE_BG_API_KEY = os.getenv('REMOVE_BG_API_KEY')
@@ -173,16 +146,12 @@ def upload_image():
 
     try:
         image_bytes = file.read()
-        upload_result = cloudinary.uploader.upload(
-            file=io.BytesIO(image_bytes),
-            folder="jakom-website-images",
-            resource_type="image"
-        )
+        # Encode the image bytes to base64
+        encoded_image = base64.b64encode(image_bytes).decode('utf-8')
         
         return jsonify({
             'message': 'Image uploaded successfully!',
-            'image_id': upload_result['public_id'],
-            'image_url': upload_result['secure_url']
+            'image_data': encoded_image # Return base64 encoded image data
         }), 200
     except Exception as e:
         print(f"Upload error: {e}")
@@ -193,31 +162,28 @@ def remove_background():
     if request.method == 'OPTIONS':
         return '', 204
 
-    image_url = request.form.get('image_url')
-    if not image_url:
-        return jsonify({'error': 'No image_url provided for background removal'}), 400
+    # Expect base64 image data instead of URL
+    image_data = request.form.get('image_data')
+    if not image_data:
+        return jsonify({'error': 'No image_data provided for background removal'}), 400
 
     try:
-        original_image_response = requests.get(image_url)
-        original_image_response.raise_for_status()
-        original_bytes = original_image_response.content
+        # Decode base64 image data to bytes
+        original_bytes = base64.b64decode(image_data)
 
         processed_bytes = remove_background_api(original_bytes)
         
-        upload_result = cloudinary.uploader.upload(
-            file=io.BytesIO(processed_bytes),
-            folder="jakom-website-processed",
-            resource_type="image"
-        )
+        # Encode processed bytes back to base64
+        encoded_processed_image = base64.b64encode(processed_bytes).decode('utf-8')
         
         return jsonify({
             'message': 'Background removed successfully!',
-            'image_url': upload_result['secure_url']
+            'image_data': encoded_processed_image # Return base64 encoded image data
         }), 200
     except ValueError as e:
         return jsonify({'error': str(e)}), 500
     except requests.exceptions.RequestException as e:
-        return jsonify({'error': f'Failed to fetch image or call background removal API: {e}'}), 500
+        return jsonify({'error': f'Failed to call background removal API: {e}'}), 500
     except Exception as e:
         print(f"Background removal error: {e}")
         return jsonify({'error': f'Failed to remove background: {e}'}), 500
@@ -227,17 +193,17 @@ def edit_background():
     if request.method == 'OPTIONS':
         return '', 204
 
-    image_url = request.form.get('image_url')
+    # Expect base64 image data
+    image_data = request.form.get('image_data')
     color = request.form.get('color')
     background_file = request.files.get('background_image')
 
-    if not image_url:
-        return jsonify({'error': 'No image_url provided for background editing'}), 400
+    if not image_data:
+        return jsonify({'error': 'No image_data provided for background editing'}), 400
 
     try:
-        original_image_response = requests.get(image_url)
-        original_image_response.raise_for_status()
-        original_bytes = original_image_response.content
+        # Decode base64 image data to bytes
+        original_bytes = base64.b64decode(image_data)
 
         processed_bytes = None
         if color:
@@ -249,14 +215,11 @@ def edit_background():
             return jsonify({'error': 'No color or background image file provided'}), 400
 
         if processed_bytes:
-            upload_result = cloudinary.uploader.upload(
-                file=io.BytesIO(processed_bytes),
-                folder="jakom-website-edited",
-                resource_type="image"
-            )
+            # Encode processed bytes back to base64
+            encoded_processed_image = base64.b64encode(processed_bytes).decode('utf-8')
             return jsonify({
                 'message': 'Background edited successfully!',
-                'image_url': upload_result['secure_url']
+                'image_data': encoded_processed_image # Return base64 encoded image data
             }), 200
         return jsonify({'error': 'Background editing failed due to unknown reason'}), 500
     except requests.exceptions.RequestException as e:
@@ -271,12 +234,13 @@ def resize_image_endpoint():
     if request.method == 'OPTIONS':
         return '', 204
 
-    image_url = request.form.get('image_url')
+    # Expect base64 image data
+    image_data = request.form.get('image_data')
     width_str = request.form.get('width')
     height_str = request.form.get('height')
 
-    if not image_url:
-        return jsonify({'error': 'No image_url provided for resizing'}), 400
+    if not image_data:
+        return jsonify({'error': 'No image_data provided for resizing'}), 400
     
     try:
         width = int(width_str) if width_str and width_str.lower() != 'auto' else 'auto'
@@ -290,20 +254,16 @@ def resize_image_endpoint():
         return jsonify({'error': 'At least one valid numerical dimension or both "auto" are required for resizing'}), 400
 
     try:
-        original_image_response = requests.get(image_url)
-        original_image_response.raise_for_status()
-        original_bytes = original_image_response.content
+        # Decode base64 image data to bytes
+        original_bytes = base64.b64decode(image_data)
 
         processed_bytes = resize_image(original_bytes, width, height)
         if processed_bytes:
-            upload_result = cloudinary.uploader.upload(
-                file=io.BytesIO(processed_bytes),
-                folder="jakom-website-resized",
-                resource_type="image"
-            )
+            # Encode processed bytes back to base64
+            encoded_processed_image = base64.b64encode(processed_bytes).decode('utf-8')
             return jsonify({
                 'message': 'Image resized successfully!',
-                'image_url': upload_result['secure_url']
+                'image_data': encoded_processed_image # Return base64 encoded image data
             }), 200
         return jsonify({'error': 'Image resizing failed due to unknown reason'}), 500
     except requests.exceptions.RequestException as e:
