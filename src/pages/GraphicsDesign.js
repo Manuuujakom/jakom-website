@@ -1,7 +1,7 @@
 // src/components/GraphicsDesign.js (or GraphicsDesignPage.js)
 
 import React, { useState, useEffect } from 'react';
-import BackgroundRemover from './BackgroundRemover'; // This path is already correct
+import BackgroundRemover from './backgroundRemover'; // This path is correct if in the same directory
 
 // OtherPortfolio Component
 const OtherPortfolio = ({ onBack }) => {
@@ -340,10 +340,10 @@ const GraphicsDesign = ({ navigateTo }) => {
         <div
           className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up cursor-pointer hover:scale-105 transition duration-300"
           style={{ animationDelay: '1.0s' }}
-          onClick={() => navigateTo('BackgroundRemover')} // New navigation target
+          onClick={() => navigateTo('BackgroundRemover')} // This argument will match the case in the switch statement
         >
           <img src="https://placehold.co/100x100/0A1128/C9B072?text=Tool" alt="Editing Tool" className="mb-4 rounded-full p-2" />
-          <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Image Tools</h3> {/* Added h3 for consistency */}
+          <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Image Tools</h3>
           <p className="text-[#CCD2E3]">Remove backgrounds, resize, and optimize your images with ease!</p>
           <button className="mt-4 px-4 py-2 bg-[#C9B072] text-[#0A1128] font-semibold rounded-full hover:bg-opacity-90">
             Try Now
@@ -372,7 +372,7 @@ const App = () => {
         return <VideoEditing onBack={() => navigateTo('graphicsDesign')} />;
       case 'otherPortfolio':
         return <OtherPortfolio onBack={() => navigateTo('graphicsDesign')} />;
-      case 'BackgroundRemover': // Corrected case to match navigateTo argument
+      case 'BackgroundRemover': // This case statement now exactly matches the argument passed to navigateTo
         return <BackgroundRemover onBack={() => navigateTo('graphicsDesign')} />;
       default:
         return null;
