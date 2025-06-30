@@ -372,7 +372,7 @@ const App = () => {
         return <VideoEditing onBack={() => navigateTo('graphicsDesign')} />;
       case 'otherPortfolio':
         return <OtherPortfolio onBack={() => navigateTo('graphicsDesign')} />;
-      case 'backgroundRemover': // <--- NEW: Case for the Background Remover
+      case 'BackgroundRemover': // <--- NEW: Case for the Background Remover
         return <BackgroundRemover onBack={() => navigateTo('graphicsDesign')} />;
       default:
         return null;
