@@ -1,7 +1,7 @@
 // src/components/GraphicsDesign.js (or GraphicsDesignPage.js)
 
 import React, { useState, useEffect } from 'react';
-import BackgroundRemover from 'src/pages/BackgroundRemover'; // This path is already correct
+import BackgroundRemover from 'pages/BackgroundRemover'; // This path is already correct
 
 // OtherPortfolio Component
 const OtherPortfolio = ({ onBack }) => {
