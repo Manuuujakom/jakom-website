@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Define the backend URL using an environment variable
-// In a production environment, set REACT_APP_BACKEND_URL to your deployed backend URL.
-// For local development, it defaults to 'http://127.0.0.1:5000'.
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://127.0.0.1:5000';
+// Define the backend URL directly to your Vercel deployment
+const BACKEND_URL = 'https://jakomonestoptechsolution.vercel.app';
 
 // Main App component
 const App = () => {
