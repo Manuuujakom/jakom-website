@@ -1,13 +1,14 @@
 // src/components/GraphicsDesign.js (or GraphicsDesignPage.js)
 
 import React, { useState, useEffect } from 'react';
+import BackgroundRemover from '../pages/BackgroundRemover'; // <--- NEW: Import your BackgroundRemover component
 
 // OtherPortfolio Component
 const OtherPortfolio = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] flex flex-col items-center justify-center p-4">
       {/* Top Back Button */}
-      <div className="w-full flex justify-start mb-8 max-w-3xl"> {/* Added container for alignment */}
+      <div className="w-full flex justify-start mb-8 max-w-3xl">
         <button
           onClick={onBack}
           className="px-6 py-2 bg-[#C9B072] text-[#0A1128] font-semibold text-base rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90"
@@ -39,11 +40,11 @@ const VideoEditing = ({ onBack }) => {
   return (
     <div className="min-h-screen bg-[#0A1128] text-[#F8F8F8] p-8 md:p-16 flex flex-col items-center justify-center text-center">
       {/* Top Back Button */}
-      <div className="w-full flex justify-start mb-12 md:mb-16 max-w-4xl"> {/* Adjusted margin for spacing */}
+      <div className="w-full flex justify-start mb-12 md:mb-16 max-w-4xl">
         <button
           onClick={onBack}
           className="px-6 py-2 bg-[#C9B072] text-[#0A1128] font-semibold text-base rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-fade-in-up"
-          style={{ animationDelay: '0.1s' }} // Slight delay to match other animations
+          style={{ animationDelay: '0.1s' }}
         >
           &larr; Back to Graphics & Design
         </button>
@@ -84,16 +85,16 @@ const PosterGallery = ({ onBack }) => {
   const [posters, setPosters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedPoster, setSelectedPoster] = useState(null); // New state for selected poster
+  const [selectedPoster, setSelectedPoster] = useState(null); // State for selected poster
 
   useEffect(() => {
     const fetchPosters = async () => {
       try {
-        setLoading(true); // Set loading to true at the start of fetch
+        setLoading(true);
         const response = await fetch('/api/posters');
 
         if (!response.ok) {
-          const errorDetail = await response.text(); // Get raw text to see server's error
+          const errorDetail = await response.text();
           console.error('Error response from /api/posters:', response.status, response.statusText, errorDetail);
           throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorDetail.substring(0, 100)}...`);
         }
@@ -126,14 +127,12 @@ const PosterGallery = ({ onBack }) => {
     };
 
     fetchPosters();
-  }, []); // Empty dependency array means this runs once on component mount (and re-runs on page refresh)
+  }, []);
 
-  // Function to open the modal
   const openPosterModal = (poster) => {
     setSelectedPoster(poster);
   };
 
-  // Function to close the modal
   const closePosterModal = () => {
     setSelectedPoster(null);
   };
@@ -207,16 +206,13 @@ const PosterGallery = ({ onBack }) => {
             <div
               key={poster.id}
               className="bg-[#1C2C59] rounded-xl p-4 shadow-lg border border-[#4CAF50] cursor-pointer hover:scale-105 transition-transform duration-200"
-              onClick={() => openPosterModal(poster)} // Click handler to open modal
+              onClick={() => openPosterModal(poster)}
             >
               <img
                 src={poster.imageUrl}
                 className="w-full h-64 object-cover rounded-md mb-4"
-                alt={poster.title || 'Portfolio Image'} // Fallback alt text
+                alt={poster.title || 'Portfolio Image'}
               />
-              {/* Removed poster title display */}
-              {/* <h3 className="text-xl font-bold text-[#F8F8F8] mb-2">{poster.title}</h3> */}
-              {/* <p className="text-[#CCD2E3]">A stunning example of our print design work.</p> */}
             </div>
           ))
         ) : (
@@ -235,9 +231,9 @@ const PosterGallery = ({ onBack }) => {
       {selectedPoster && (
         <div
           className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-50 p-4"
-          onClick={closePosterModal} // Close modal when clicking outside image
+          onClick={closePosterModal}
         >
-          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-lg shadow-lg" onClick={(e) => e.stopPropagation()}> {/* Prevent closing when clicking on the image container */}
+          <div className="relative max-w-4xl max-h-[90vh] overflow-hidden rounded-lg shadow-lg" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={closePosterModal}
               className="absolute top-4 right-4 text-white text-3xl font-bold bg-gray-700 bg-opacity-75 rounded-full w-10 h-10 flex items-center justify-center transition hover:bg-red-600 z-10"
@@ -304,7 +300,7 @@ const GraphicsDesign = ({ navigateTo }) => {
               </button>
               <button
                 onClick={() => { navigateTo('otherPortfolio'); setShowPortfolioMenu(false); }}
-                className="block w-full text-left px-6 py-4 text-lg hover:bg-[#0A1128] transition duration-200 rounded-b-xl"
+                className="block w-full text-left px-6 py-4 text-lg hover:bg-[#0A1128] transition duration-200"
               >
                 Other Portfolio (Coming Soon!)
               </button>
@@ -320,7 +316,7 @@ const GraphicsDesign = ({ navigateTo }) => {
       <p className="text-xl md:text-2xl text-[#CCD2E3] max-w-3xl mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
         Transform your vision into stunning visual realities. Our graphic design experts craft compelling logos, engaging marketing materials, and cohesive brand identities that resonate with your audience.
       </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-4xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 w-full max-w-6xl"> {/* Adjusted max-w and grid for new card */}
         <div className="bg-[#0A1128] border border-[#4CAF50] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Logo" alt="Logo Design" className="mb-4 rounded-full p-2" />
           <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Logo & Branding</h3>
@@ -338,6 +334,20 @@ const GraphicsDesign = ({ navigateTo }) => {
           <img src="https://placehold.co/100x100/0A1128/4CAF50?text=Print" alt="Print Design" className="mb-4 rounded-full p-2" />
           <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Print & Marketing</h3>
           <p className="text-[#CCD2E3]">Brochures, flyers, business cards, and more. <span className="text-[#C9B072] font-semibold">(Select from 'View Portfolios')</span></p>
+        </div>
+
+        {/* NEW: Background Remover / Image Resize Tool Card */}
+        <div
+          className="bg-[#0A1128] border border-[#C9B072] rounded-xl p-6 flex flex-col items-center text-center shadow-lg animate-fade-in-up cursor-pointer hover:scale-105 transition duration-300"
+          style={{ animationDelay: '1.0s' }}
+          onClick={() => navigateTo('backgroundRemover')} // New navigation target
+        >
+          <img src="https://placehold.co/100x100/0A1128/C9B072?text=Tool" alt="Image Tool" className="mb-4 rounded-full p-2" />
+          <h3 className="text-2xl font-bold text-[#F8F8F8] mb-2">Image Tools</h3>
+          <p className="text-[#CCD2E3]">Remove backgrounds, resize, and optimize your images with ease!</p>
+          <button className="mt-4 px-4 py-2 bg-[#C9B072] text-[#0A1128] font-semibold rounded-full hover:bg-opacity-90">
+            Try Now
+          </button>
         </div>
       </div>
     </div>
@@ -362,6 +372,8 @@ const App = () => {
         return <VideoEditing onBack={() => navigateTo('graphicsDesign')} />;
       case 'otherPortfolio':
         return <OtherPortfolio onBack={() => navigateTo('graphicsDesign')} />;
+      case 'backgroundRemover': // <--- NEW: Case for the Background Remover
+        return <BackgroundRemover onBack={() => navigateTo('graphicsDesign')} />;
       default:
         return null;
     }
