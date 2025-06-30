@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Define the backend URL directly to your Vercel deployment
-const BACKEND_URL = 'https://jakomonestoptechsolution.vercel.app';
+// Removed the BACKEND_URL constant as we will use relative paths for API calls.
+// Vercel will automatically route /api/* requests to the Node.js backend (server.js)
+// when deployed within the same project.
 
 // Main App component
 const App = () => {
@@ -12,7 +13,7 @@ const App = () => {
     // State for the processed image URL (will be data URL now)
     const [processedImage, setProcessedImage] = useState(null);
     // State to store the Base64 image data currently being processed on the backend
-    const [currentImageData, setCurrentImageData] = useState(null); // Changed from currentImageUrl
+    const [currentImageData, setCurrentImageData] = useState(null);
     // State for the selected background color
     const [backgroundColor, setBackgroundColor] = useState('#000000'); // Default to black
     // State for the uploaded background image file
@@ -34,7 +35,6 @@ const App = () => {
     const backgroundInputRef = useRef(null);
 
     // Effect to create and revoke object URLs for image previews (for local file previews)
-    // This part remains mostly the same as it's for local file previews before upload
     useEffect(() => {
         if (originalImage) {
             const objectUrl = URL.createObjectURL(originalImage);
@@ -72,16 +72,16 @@ const App = () => {
             formData.append('image', file); // Send the file directly
 
             try {
-                const response = await fetch(`${BACKEND_URL}/api/upload`, {
+                // Use relative path for API call
+                const response = await fetch(`/api/upload`, {
                     method: 'POST',
                     body: formData,
                 });
                 const result = await response.json();
                 if (response.ok) {
                     setMessage(result.message);
-                    // Backend now returns 'image_data' (Base64 string)
                     setCurrentImageData(result.image_data);
-                    setProcessedImage(`data:image/png;base64,${result.image_data}`); // Create data URL for display
+                    setProcessedImage(`data:image/png;base64,${result.image_data}`);
                 } else {
                     setMessage(`Upload Error: ${result.error || 'Failed to upload image.'}`);
                     setOriginalImage(null);
@@ -114,7 +114,7 @@ const App = () => {
 
     // Helper function to make actual API calls to the Node.js backend
     const makeRealApiCall = async (endpoint, data) => {
-        if (!currentImageData && endpoint !== '/api/upload') { // Ensure image data exists for subsequent ops
+        if (!currentImageData && endpoint !== '/api/upload') {
             setMessage('Please upload an image first.');
             setIsLoading(false);
             return null;
@@ -125,10 +125,9 @@ const App = () => {
 
         let bodyToSend = new FormData();
         if (currentImageData) {
-            bodyToSend.append('image_data', currentImageData); // Send Base64 image data
+            bodyToSend.append('image_data', currentImageData);
         }
 
-        // Append additional data to the FormData object
         if (data instanceof FormData) {
             for (let pair of data.entries()) {
                 bodyToSend.append(pair[0], pair[1]);
@@ -140,7 +139,8 @@ const App = () => {
         }
 
         try {
-            const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+            // Use relative path for API call
+            const response = await fetch(`${endpoint}`, {
                 method: 'POST',
                 body: bodyToSend,
             });
@@ -148,9 +148,9 @@ const App = () => {
             const result = await response.json();
             if (response.ok) {
                 setMessage(result.message || 'Operation successful!');
-                if (result.image_data) { // Expect 'image_data' now
-                    setCurrentImageData(result.image_data); // Update to the new processed Base64 data
-                    setProcessedImage(`data:image/png;base64,${result.image_data}`); // Create data URL for display
+                if (result.image_data) {
+                    setCurrentImageData(result.image_data);
+                    setProcessedImage(`data:image/png;base64,${result.image_data}`);
                 }
                 return result;
             } else {
@@ -194,7 +194,7 @@ const App = () => {
             return;
         }
         const formData = new FormData();
-        formData.append('background_image', backgroundImage); // Still sending file for background
+        formData.append('background_image', backgroundImage);
         await makeRealApiCall('/api/edit-background', formData);
     };
 
@@ -204,7 +204,6 @@ const App = () => {
             setMessage('No image to download. Please process an image first.');
             return;
         }
-        // processedImage is already a data URL, so direct download works
         const link = document.createElement('a');
         link.href = processedImage;
         link.download = `processed_image_${resizeOption}.png`;
@@ -223,11 +222,11 @@ const App = () => {
 
         let targetWidth, targetHeight;
         const commonSizes = {
-            'passport': { width: 413, height: 531 }, // ~2x2 inches at 200dpi
-            'id_card': { width: 330, height: 210 }, // Example
+            'passport': { width: 413, height: 531 },
+            'id_card': { width: 330, height: 210 },
             'web_thumbnail': { width: 150, height: 150 },
-            'social_media': { width: 1080, height: 1080 }, // Instagram square
-            'original': null // No specific resize, backend will return current image
+            'social_media': { width: 1080, height: 1080 },
+            'original': null
         };
 
         if (resizeOption === 'custom') {
@@ -241,7 +240,7 @@ const App = () => {
             targetWidth = commonSizes[resizeOption].width;
             targetHeight = commonSizes[resizeOption].height;
         } else if (resizeOption === 'original') {
-             targetWidth = 'auto'; // Explicitly send 'auto' for backend to interpret as no change
+             targetWidth = 'auto';
              targetHeight = 'auto';
         } else {
             setMessage('Please select a valid resize option.');
@@ -311,7 +310,7 @@ const App = () => {
                     <p className={`mb-4 ${colors.text}`}>Click to remove the background from your uploaded image.</p>
                     <button
                         onClick={handleRemoveBackground}
-                        disabled={!currentImageData || isLoading} // Changed from currentImageUrl
+                        disabled={!currentImageData || isLoading}
                         className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
                                 ${(!currentImageData || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                     >
@@ -346,7 +345,7 @@ const App = () => {
                             <span className={`${colors.text}`}>{backgroundColor.toUpperCase()}</span>
                             <button
                                 onClick={handleApplySolidColor}
-                                disabled={!currentImageData || isLoading} // Changed from currentImageUrl
+                                disabled={!currentImageData || isLoading}
                                 className={`flex-grow py-2 px-4 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
                                     ${(!currentImageData || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                             >
@@ -383,7 +382,7 @@ const App = () => {
                         )}
                         <button
                             onClick={handleApplyImageBackground}
-                            disabled={!currentImageData || !backgroundImage || isLoading} // Changed from currentImageUrl
+                            disabled={!currentImageData || !backgroundImage || isLoading}
                             className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
                                 ${(!currentImageData || !backgroundImage || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                         >
@@ -452,7 +451,7 @@ const App = () => {
 
                     <button
                         onClick={handleResizeImage}
-                        disabled={!currentImageData || isLoading} // Changed from currentImageUrl
+                        disabled={!currentImageData || isLoading}
                         className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 mb-6 ${colors.button} ${colors.text} shadow-md
                                 ${(!currentImageData || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                     >
