@@ -1,7 +1,7 @@
 # api/background-remover-backend.py
 
 from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS, cross_origin # Import cross_origin decorator
+from flask_cors import CORS, cross_origin # Keep cross_origin for clarity, but primarily use after_request
 import os
 import io
 import base64
@@ -16,16 +16,37 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# --- Production Configuration: Allowing all origins for CORS ---
-# It's crucial to specify the exact origins that are allowed to access your API.
-# 'https://jakom-one-stop-tech-solution-hilu5cvyw.vercel.app' is typically a Vercel preview/branch domain.
-# 'https://jakomonestoptechsolution.vercel.app' is your main production domain.
-# Include both if you want to allow requests from both during development/testing on Vercel.
-CORS(app, resources={r"/api/*": {"origins": [
-    "https://jakom-one-stop-tech-solution-hilu5cvyw.vercel.app",
-    "https://jakomonestoptechsolution.vercel.app",
-    "http://localhost:3000" # Add your local development URL if you test locally
-]}})
+# --- CORS Configuration ---
+# WARNING: Setting origins to "*" allows ANY domain to make requests to your API.
+# This is a significant security risk for production applications.
+# It is strongly recommended to restrict this to specific frontend domains.
+# However, to force CORS for debugging, we'll use '*' in the after_request.
+# We will remove the Flask-CORS extension initialization (CORS(app))
+# and rely on the manual header injection for all routes.
+# The @cross_origin decorators will also be removed as they might conflict
+# or be redundant with the manual approach.
+
+# Define allowed origins for the Access-Control-Allow-Origin header
+# For debugging, we'll use "*" as requested, but ideally, this should be:
+# ALLOWED_ORIGINS = [
+#     "https://jakom-one-stop-tech-solution-hilu5cvyw.vercel.app",
+#     "https://jakomonestoptechsolution.vercel.app",
+#     "http://localhost:3000"
+# ]
+# For this fix, we'll use "*" to ensure it's not an origin-specific problem.
+CORS_ALLOW_ORIGIN = "*" # Allowing all origins for debugging CORS issues
+
+@app.after_request
+def add_cors_headers(response):
+    """
+    Manually adds CORS headers to every response.
+    This is a more aggressive approach to ensure CORS is enabled.
+    """
+    response.headers['Access-Control-Allow-Origin'] = CORS_ALLOW_ORIGIN
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Credentials'] = 'true' # Important for cookies/auth if used
+    return response
 
 # --- Cloudinary Configuration ---
 # WARNING: Hardcoding API keys directly in the code is a security risk and
@@ -40,8 +61,7 @@ cloudinary.config(
 )
 
 # --- External API Configuration ---
-# Get your API key from remove.bg after signing up
-REMOVE_BG_API_KEY = os.getenv('REMOVE_BG_API_KEY') # Still using environment variable for remove.bg
+REMOVE_BG_API_KEY = os.getenv('REMOVE_BG_API_KEY')
 REMOVE_BG_API_URL = 'https://api.remove.bg/v1.0/removebg'
 
 # --- Helper Functions (Actual Image Processing) ---
@@ -140,10 +160,9 @@ def resize_image(image_bytes, width, height):
 
 # --- API Endpoints ---
 
-@app.route('/api/upload', methods=['POST', 'OPTIONS']) # Add OPTIONS to methods
-@cross_origin(origins=ALLOWED_ORIGINS, methods=['POST'], headers=['Content-Type']) # Explicit CORS
+@app.route('/api/upload', methods=['POST', 'OPTIONS'])
 def upload_image():
-    if request.method == 'OPTIONS': # Handle preflight request
+    if request.method == 'OPTIONS':
         return '', 204
     
     if 'image' not in request.files:
@@ -170,7 +189,6 @@ def upload_image():
         return jsonify({'error': f'Failed to upload image: {e}'}), 500
 
 @app.route('/api/remove-background', methods=['POST', 'OPTIONS'])
-@cross_origin(origins=ALLOWED_ORIGINS, methods=['POST'], headers=['Content-Type'])
 def remove_background():
     if request.method == 'OPTIONS':
         return '', 204
@@ -205,7 +223,6 @@ def remove_background():
         return jsonify({'error': f'Failed to remove background: {e}'}), 500
 
 @app.route('/api/edit-background', methods=['POST', 'OPTIONS'])
-@cross_origin(origins=ALLOWED_ORIGINS, methods=['POST'], headers=['Content-Type'])
 def edit_background():
     if request.method == 'OPTIONS':
         return '', 204
@@ -250,7 +267,6 @@ def edit_background():
 
 
 @app.route('/api/resize-image', methods=['POST', 'OPTIONS'])
-@cross_origin(origins=ALLOWED_ORIGINS, methods=['POST'], headers=['Content-Type'])
 def resize_image_endpoint():
     if request.method == 'OPTIONS':
         return '', 204
