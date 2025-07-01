@@ -1,5 +1,6 @@
 // src/App.js
 import React, { useState, useEffect, useRef } from 'react';
+import { removeImageBackground } from '@tremor/react-remove-image-background'; // Import the function
 
 // Main App component
 const App = () => {
@@ -9,8 +10,8 @@ const App = () => {
     const [originalImagePreview, setOriginalImagePreview] = useState(null);
     // State for the URL of the processed image (data URL)
     const [processedImage, setProcessedImage] = useState(null);
-    // State to store the Base64 image data currently being processed on the backend
-    // This is crucial as it's passed back and forth for chained operations.
+    // State to store the Base64 image data currently being processed
+    // This is crucial as it's passed back and forth for chained operations, and sent to backend.
     const [currentImageData, setCurrentImageData] = useState(null);
     // State for the selected background color
     const [backgroundColor, setBackgroundColor] = useState('#000000'); // Default to black
@@ -56,7 +57,8 @@ const App = () => {
         }
     }, [backgroundImage]);
 
-    // Handler for original image file input change - now uploads to backend immediately
+    // Handler for original image file input change
+    // Now reads the file directly into a Base64 string for frontend processing
     const handleOriginalImageUpload = async (event) => {
         const file = event.target.files[0];
         if (file && file.type.startsWith('image/')) {
@@ -66,33 +68,30 @@ const App = () => {
             setMessage('');
 
             setIsLoading(true);
-            setMessage('Uploading image to backend...');
-            const formData = new FormData();
-            formData.append('image', file); // Send the file directly
+            setMessage('Loading image for frontend processing...');
 
             try {
-                // Use relative path for API call. Vercel will route this to api/index.py
-                const response = await fetch(`/api`, { // Changed to /api as the main endpoint
-                    method: 'POST',
-                    body: formData,
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    setMessage(result.message);
-                    setCurrentImageData(result.image_data); // Store Base64 string from backend
-                    setProcessedImage(`data:image/png;base64,${result.image_data}`);
-                } else {
-                    setMessage(`Upload Error: ${result.error || 'Failed to upload image.'}`);
-                    setOriginalImage(null);
-                    setOriginalImagePreview(null);
-                }
+                // Read the file into a data URL (Base64)
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const base64String = e.target.result.split(',')[1]; // Get only the Base64 part
+                    setCurrentImageData(base64String); // This is the image data for processing
+                    setProcessedImage(e.target.result); // Initially, processed is same as original
+                    setMessage('Image loaded successfully. Ready for background removal.');
+                    setIsLoading(false);
+                };
+                reader.onerror = (error) => {
+                    setMessage(`Error reading file: ${error.message}`);
+                    setIsLoading(false);
+                };
+                reader.readAsDataURL(file);
+
             } catch (error) {
-                console.error('Network or server error during upload:', error);
-                setMessage(`Network Error: Could not connect to backend or server issue. Please ensure the backend is running and accessible. ${error.message}`);
+                console.error('Error handling image upload:', error);
+                setMessage(`Error preparing image: ${error.message}`);
+                setIsLoading(false);
                 setOriginalImage(null);
                 setOriginalImagePreview(null);
-            } finally {
-                setIsLoading(false);
             }
 
         } else {
@@ -112,21 +111,21 @@ const App = () => {
     };
 
     // Helper function to make actual API calls to the Python backend
+    // This function will still be used for Edit Background and Resize
     const makeRealApiCall = async (endpoint, data) => {
-        if (!currentImageData && endpoint !== '/api') { // Only allow /api (upload) without currentImageData
+        if (!currentImageData) {
             setMessage('Please upload an image first.');
             setIsLoading(false);
             return null;
         }
 
         setIsLoading(true);
-        setMessage(`Processing via ${endpoint}...`);
+        setMessage(`Processing via backend (${endpoint})...`);
 
         let bodyToSend = new FormData();
         // Always send the current image data (Base64 string) for subsequent operations
-        if (currentImageData) {
-            bodyToSend.append('image_data', currentImageData);
-        }
+        bodyToSend.append('image_data', currentImageData);
+
 
         // Append other data specific to the operation
         if (data instanceof FormData) {
@@ -150,7 +149,7 @@ const App = () => {
             if (response.ok) {
                 setMessage(result.message || 'Operation successful!');
                 if (result.image_data) {
-                    setCurrentImageData(result.image_data); // Update with new Base64 string
+                    setCurrentImageData(result.image_data); // Update with new Base64 string from backend
                     setProcessedImage(`data:image/png;base64,${result.image_data}`);
                 }
                 return result;
@@ -160,7 +159,7 @@ const App = () => {
             }
         } catch (error) {
             console.error('API call failed:', error);
-            setMessage(`Network Error: Could not connect to backend or server issue. ${error.message}`);
+            setMessage(`Network Error: Could not connect to backend or server issue. Please ensure the backend is running and accessible. ${error.message}`);
             return null;
         } finally {
             setIsLoading(false);
@@ -168,18 +167,43 @@ const App = () => {
     };
 
     // Handler for "Remove Background" button click
+    // NOW USING @tremor/react-remove-image-background (Frontend processing)
     const handleRemoveBackground = async () => {
-        if (!currentImageData) {
+        if (!originalImagePreview) { // We need a direct image source (Data URL) for tremor
             setMessage('Please upload an image first.');
             return;
         }
-        await makeRealApiCall('/api/remove-background', {});
+        setIsLoading(true);
+        setMessage('Removing background (this may take a moment on your device)...');
+
+        try {
+            // The removeImageBackground function expects an HTMLImageElement or an image URL
+            // originalImagePreview is already a data URL.
+            const imageUrl = originalImagePreview; // Use the Data URL of the original image
+            const outputImageBlob = await removeImageBackground(imageUrl);
+
+            // Convert Blob to Data URL (Base64) for display and further operations
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result.split(',')[1]; // Get only the Base64 part
+                setCurrentImageData(base64String); // Update current image data with the processed one
+                setProcessedImage(reader.result); // Set the processed image preview
+                setMessage('Background removed successfully!');
+            };
+            reader.readAsDataURL(outputImageBlob);
+
+        } catch (error) {
+            console.error('Error removing background with @tremor/react-remove-image-background:', error);
+            setMessage(`Background removal failed: ${error.message}. Make sure the image is suitable and try again.`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    // Handler for "Apply Solid Color Background" button click
+    // Handler for "Apply Solid Color Background" button click (Uses backend)
     const handleApplySolidColor = async () => {
         if (!currentImageData) {
-            setMessage('Please upload an image first.');
+            setMessage('Please upload or process an image (e.g., remove background) first.');
             return;
         }
         const data = {
@@ -188,15 +212,16 @@ const App = () => {
         await makeRealApiCall('/api/edit-background', data);
     };
 
-    // Handler for "Apply Image Background" button click
+    // Handler for "Apply Image Background" button click (Uses backend)
     const handleApplyImageBackground = async () => {
         if (!currentImageData || !backgroundImage) {
-            setMessage('Please upload an original image (first) and a background image.');
+            setMessage('Please upload or process an image, and select a background image.');
             return;
         }
         const formData = new FormData();
         // Append the actual background image file to FormData
         formData.append('background_image', backgroundImage);
+        // The makeRealApiCall already appends currentImageData, so we just need the background_image
         await makeRealApiCall('/api/edit-background', formData);
     };
 
@@ -215,10 +240,10 @@ const App = () => {
         setMessage('Image downloaded!');
     };
 
-    // Handler for "Resize Image" button click
+    // Handler for "Resize Image" button click (Uses backend)
     const handleResizeImage = async () => {
         if (!currentImageData) {
-            setMessage('Please upload an image first to resize.');
+            setMessage('Please upload or process an image first to resize.');
             return;
         }
 
@@ -270,6 +295,10 @@ const App = () => {
 
     return (
         <div className={`min-h-screen ${colors.background} p-4 sm:p-8 font-inter`}>
+            {/* These script and link tags are usually in public/index.html or handled by a build process,
+                but for a quick single-file example, they are sometimes placed here.
+                For production React apps, consider standard practices for including CSS/JS.
+            */}
             <script src="https://cdn.tailwindcss.com"></script>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
             <h1 className={`text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 ${colors.text}`}>Image Processing Toolkit</h1>
@@ -313,9 +342,9 @@ const App = () => {
                     <p className={`mb-3 sm:mb-4 text-sm sm:text-base ${colors.text}`}>Click to remove the background from your uploaded image.</p>
                     <button
                         onClick={handleRemoveBackground}
-                        disabled={!currentImageData || isLoading}
+                        disabled={!originalImagePreview || isLoading} {/* Changed to originalImagePreview check */}
                         className={`w-full py-2 sm:py-3 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
-                                ${(!currentImageData || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
+                                ${(!originalImagePreview || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                     >
                         {isLoading ? 'Processing...' : 'Remove Background'}
                     </button>
