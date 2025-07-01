@@ -1,4 +1,4 @@
-// src/App.js
+// src/pages/backgoundRemover.js
 import React, { useState, useEffect, useRef } from 'react';
 import { removeImageBackground } from '@tremor/react-remove-image-background'; // Import the function
 
@@ -296,8 +296,8 @@ const App = () => {
     return (
         <div className={`min-h-screen ${colors.background} p-4 sm:p-8 font-inter`}>
             {/* These script and link tags are usually in public/index.html or handled by a build process,
-                but for a quick single-file example, they are sometimes placed here.
-                For production React apps, consider standard practices for including CSS/JS.
+                 but for a quick single-file example, they are sometimes placed here.
+                 For production React apps, consider standard practices for including CSS/JS.
             */}
             <script src="https://cdn.tailwindcss.com"></script>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -342,7 +342,7 @@ const App = () => {
                     <p className={`mb-3 sm:mb-4 text-sm sm:text-base ${colors.text}`}>Click to remove the background from your uploaded image.</p>
                     <button
                         onClick={handleRemoveBackground}
-                        disabled={!originalImagePreview || isLoading} {/* Changed to originalImagePreview check */}
+                        disabled={!originalImagePreview || isLoading} 
                         className={`w-full py-2 sm:py-3 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
                                 ${(!originalImagePreview || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                     >
