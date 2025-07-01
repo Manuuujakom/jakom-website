@@ -17,6 +17,8 @@
     "lint-staged": "^16.1.2",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.522.0",
+    "multer": "^2.0.1",
+    "node-fetch": "^3.3.2",
     "prettier": "^3.6.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -1,22 +1,20 @@
+// src/App.js
 import React, { useState, useEffect, useRef } from 'react';
-
-// Removed the BACKEND_URL constant as we will use relative paths for API calls.
-// Vercel will automatically route /api/* requests to the Node.js backend (server.js)
-// when deployed within the same project.
 
 // Main App component
 const App = () => {
-    // State for the uploaded original image file
+    // State for the uploaded original image file (for local preview)
     const [originalImage, setOriginalImage] = useState(null);
     // State for the URL of the original image preview (will be data URL now)
     const [originalImagePreview, setOriginalImagePreview] = useState(null);
-    // State for the processed image URL (will be data URL now)
+    // State for the URL of the processed image (data URL)
     const [processedImage, setProcessedImage] = useState(null);
     // State to store the Base64 image data currently being processed on the backend
+    // This is crucial as it's passed back and forth for chained operations.
     const [currentImageData, setCurrentImageData] = useState(null);
     // State for the selected background color
     const [backgroundColor, setBackgroundColor] = useState('#000000'); // Default to black
-    // State for the uploaded background image file
+    // State for the uploaded background image file (for local preview)
     const [backgroundImage, setBackgroundImage] = useState(null);
     // State for the URL of the background image preview
     const [backgroundImagePreview, setBackgroundImagePreview] = useState(null);
@@ -39,8 +37,9 @@ const App = () => {
         if (originalImage) {
             const objectUrl = URL.createObjectURL(originalImage);
             setOriginalImagePreview(objectUrl);
-            const currentObjectUrl = objectUrl; // Capture for cleanup
-            return () => URL.revokeObjectURL(currentObjectUrl);
+            // Cleanup function to revoke the object URL when the component unmounts
+            // or originalImage changes.
+            return () => URL.revokeObjectURL(objectUrl);
         } else {
             setOriginalImagePreview(null);
         }
@@ -50,8 +49,8 @@ const App = () => {
         if (backgroundImage) {
             const objectUrl = URL.createObjectURL(backgroundImage);
             setBackgroundImagePreview(objectUrl);
-            const currentObjectUrl = objectUrl; // Capture for cleanup
-            return () => URL.revokeObjectURL(currentObjectUrl);
+            // Cleanup function to revoke the object URL
+            return () => URL.revokeObjectURL(objectUrl);
         } else {
             setBackgroundImagePreview(null);
         }
@@ -72,15 +71,15 @@ const App = () => {
             formData.append('image', file); // Send the file directly
 
             try {
-                // Use relative path for API call
-                const response = await fetch(`/api/upload`, {
+                // Use relative path for API call. Vercel will route this to api/index.py
+                const response = await fetch(`/api`, { // Changed to /api as the main endpoint
                     method: 'POST',
                     body: formData,
                 });
                 const result = await response.json();
                 if (response.ok) {
                     setMessage(result.message);
-                    setCurrentImageData(result.image_data);
+                    setCurrentImageData(result.image_data); // Store Base64 string from backend
                     setProcessedImage(`data:image/png;base64,${result.image_data}`);
                 } else {
                     setMessage(`Upload Error: ${result.error || 'Failed to upload image.'}`);
@@ -112,9 +111,9 @@ const App = () => {
         }
     };
 
-    // Helper function to make actual API calls to the Node.js backend
+    // Helper function to make actual API calls to the Python backend
     const makeRealApiCall = async (endpoint, data) => {
-        if (!currentImageData && endpoint !== '/api/upload') {
+        if (!currentImageData && endpoint !== '/api') { // Only allow /api (upload) without currentImageData
             setMessage('Please upload an image first.');
             setIsLoading(false);
             return null;
@@ -124,10 +123,12 @@ const App = () => {
         setMessage(`Processing via ${endpoint}...`);
 
         let bodyToSend = new FormData();
+        // Always send the current image data (Base64 string) for subsequent operations
         if (currentImageData) {
             bodyToSend.append('image_data', currentImageData);
         }
 
+        // Append other data specific to the operation
         if (data instanceof FormData) {
             for (let pair of data.entries()) {
                 bodyToSend.append(pair[0], pair[1]);
@@ -149,7 +150,7 @@ const App = () => {
             if (response.ok) {
                 setMessage(result.message || 'Operation successful!');
                 if (result.image_data) {
-                    setCurrentImageData(result.image_data);
+                    setCurrentImageData(result.image_data); // Update with new Base64 string
                     setProcessedImage(`data:image/png;base64,${result.image_data}`);
                 }
                 return result;
@@ -194,6 +195,7 @@ const App = () => {
             return;
         }
         const formData = new FormData();
+        // Append the actual background image file to FormData
         formData.append('background_image', backgroundImage);
         await makeRealApiCall('/api/edit-background', formData);
     };
@@ -222,8 +224,8 @@ const App = () => {
 
         let targetWidth, targetHeight;
         const commonSizes = {
-            'passport': { width: 413, height: 531 },
-            'id_card': { width: 330, height: 210 },
+            'passport': { width: 413, height: 531 }, // Approx 2x2 inches at 200 DPI
+            'id_card': { width: 330, height: 210 }, // Common ID card photo size
             'web_thumbnail': { width: 150, height: 150 },
             'social_media': { width: 1080, height: 1080 },
             'original': null
@@ -240,16 +242,16 @@ const App = () => {
             targetWidth = commonSizes[resizeOption].width;
             targetHeight = commonSizes[resizeOption].height;
         } else if (resizeOption === 'original') {
-             targetWidth = 'auto';
-             targetHeight = 'auto';
+            targetWidth = 'auto'; // Indicate no specific width/height for original
+            targetHeight = 'auto';
         } else {
             setMessage('Please select a valid resize option.');
             return;
         }
 
         const data = {};
-        if (targetWidth !== null) data.width = targetWidth;
-        if (targetHeight !== null) data.height = targetHeight;
+        if (targetWidth !== 'auto') data.width = targetWidth;
+        if (targetHeight !== 'auto') data.height = targetHeight;
 
         await makeRealApiCall('/api/resize-image', data);
     };
@@ -267,29 +269,30 @@ const App = () => {
     };
 
     return (
-        <div className={`min-h-screen ${colors.background} p-8 font-inter`}>
+        <div className={`min-h-screen ${colors.background} p-4 sm:p-8 font-inter`}>
+            <script src="https://cdn.tailwindcss.com"></script>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-            <h1 className={`text-4xl font-bold text-center mb-12 ${colors.text}`}>Image Processing Toolkit</h1>
+            <h1 className={`text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 ${colors.text}`}>Image Processing Toolkit</h1>
 
             {/* Message display area */}
             {message && (
-                <div className="bg-blue-500 text-white p-4 rounded-lg shadow-md mb-8 max-w-2xl mx-auto text-center">
+                <div className="bg-blue-500 text-white p-3 sm:p-4 rounded-lg shadow-md mb-6 sm:mb-8 max-w-xl mx-auto text-center text-sm sm:text-base">
                     {message}
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
 
                 {/* Card 1: Upload Image */}
-                <div className={`p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
-                    <h2 className={`text-2xl font-semibold mb-4 ${colors.text}`}>Upload Image</h2>
-                    <p className={`mb-4 ${colors.text}`}>Select an image from your device to begin processing.</p>
+                <div className={`p-5 sm:p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
+                    <h2 className={`text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 ${colors.text}`}>Upload Image</h2>
+                    <p className={`mb-3 sm:mb-4 text-sm sm:text-base ${colors.text}`}>Select an image from your device to begin processing.</p>
                     <input
                         type="file"
                         accept="image/*"
                         onChange={handleOriginalImageUpload}
                         className={`mb-4 block w-full text-sm ${colors.text}
-                            file:mr-4 file:py-2 file:px-4
+                            file:mr-3 sm:file:mr-4 file:py-2 file:px-3 sm:file:px-4
                             file:rounded-full file:border-0
                             file:text-sm file:font-semibold
                             file:${colors.button} file:text-white
@@ -298,38 +301,38 @@ const App = () => {
                     />
                     {originalImagePreview && (
                         <div className="mb-4 text-center">
-                            <h3 className={`text-lg font-medium mb-2 ${colors.text}`}>Original Image Preview:</h3>
-                            <img src={originalImagePreview} alt="Original Preview" className="max-w-full h-auto rounded-lg shadow-md mx-auto" />
+                            <h3 className={`text-base sm:text-lg font-medium mb-2 ${colors.text}`}>Original Image Preview:</h3>
+                            <img src={originalImagePreview} alt="Original Preview" className="max-w-full h-auto rounded-lg shadow-md mx-auto border border-gray-500" />
                         </div>
                     )}
                 </div>
 
                 {/* Card 2: Remove Background */}
-                <div className={`p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
-                    <h2 className={`text-2xl font-semibold mb-4 ${colors.text}`}>Remove Background</h2>
-                    <p className={`mb-4 ${colors.text}`}>Click to remove the background from your uploaded image.</p>
+                <div className={`p-5 sm:p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
+                    <h2 className={`text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 ${colors.text}`}>Remove Background</h2>
+                    <p className={`mb-3 sm:mb-4 text-sm sm:text-base ${colors.text}`}>Click to remove the background from your uploaded image.</p>
                     <button
                         onClick={handleRemoveBackground}
                         disabled={!currentImageData || isLoading}
-                        className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
+                        className={`w-full py-2 sm:py-3 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
                                 ${(!currentImageData || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                     >
                         {isLoading ? 'Processing...' : 'Remove Background'}
                     </button>
                     {processedImage && (
                         <div className="mt-6 text-center">
-                            <h3 className={`text-lg font-medium mb-2 ${colors.text}`}>Processed Image Preview:</h3>
+                            <h3 className={`text-base sm:text-lg font-medium mb-2 ${colors.text}`}>Processed Image Preview:</h3>
                             <img src={processedImage} alt="Processed Preview" className="max-w-full h-auto rounded-lg shadow-md mx-auto border border-gray-500" />
                         </div>
                     )}
                 </div>
 
                 {/* Card 3: Edit Background */}
-                <div className={`p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
-                    <h2 className={`text-2xl font-semibold mb-4 ${colors.text}`}>Edit Background</h2>
-                    <p className={`mb-4 ${colors.text}`}>Change the background to a solid color or another photo.</p>
+                <div className={`p-5 sm:p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
+                    <h2 className={`text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 ${colors.text}`}>Edit Background</h2>
+                    <p className={`mb-3 sm:mb-4 text-sm sm:text-base ${colors.text}`}>Change the background to a solid color or another photo.</p>
 
-                    <div className="mb-6">
+                    <div className="mb-5 sm:mb-6">
                         <label htmlFor="bgColor" className={`block text-sm font-medium mb-2 ${colors.text}`}>
                             Solid Color Background:
                         </label>
@@ -339,15 +342,15 @@ const App = () => {
                                 id="bgColor"
                                 value={backgroundColor}
                                 onChange={(e) => setBackgroundColor(e.target.value)}
-                                className="w-12 h-12 rounded-full border-2 border-gray-300 cursor-pointer"
+                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-gray-300 cursor-pointer"
                                 disabled={isLoading}
                             />
-                            <span className={`${colors.text}`}>{backgroundColor.toUpperCase()}</span>
+                            <span className={`${colors.text} text-sm sm:text-base`}>{backgroundColor.toUpperCase()}</span>
                             <button
                                 onClick={handleApplySolidColor}
                                 disabled={!currentImageData || isLoading}
                                 className={`flex-grow py-2 px-4 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
-                                    ${(!currentImageData || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
+                                        ${(!currentImageData || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                             >
                                 Apply Color
                             </button>
@@ -376,14 +379,14 @@ const App = () => {
                         </button>
                         {backgroundImagePreview && (
                             <div className="mb-4 text-center">
-                                <h3 className={`text-lg font-medium mb-2 ${colors.text}`}>Background Image Preview:</h3>
-                                <img src={backgroundImagePreview} alt="Background Preview" className="max-w-full h-auto rounded-lg shadow-md mx-auto" />
+                                <h3 className={`text-base sm:text-lg font-medium mb-2 ${colors.text}`}>Background Image Preview:</h3>
+                                <img src={backgroundImagePreview} alt="Background Preview" className="max-w-full h-auto rounded-lg shadow-md mx-auto border border-gray-500" />
                             </div>
                         )}
                         <button
                             onClick={handleApplyImageBackground}
                             disabled={!currentImageData || !backgroundImage || isLoading}
-                            className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
+                            className={`w-full py-2 sm:py-3 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-md
                                 ${(!currentImageData || !backgroundImage || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                         >
                             Apply Image
@@ -392,9 +395,9 @@ const App = () => {
                 </div>
 
                 {/* Card 4: Resize Image & Download */}
-                <div className={`p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
-                    <h2 className={`text-2xl font-semibold mb-4 ${colors.text}`}>Resize & Download</h2>
-                    <p className={`mb-4 ${colors.text}`}>Choose a size for your processed image.</p>
+                <div className={`p-5 sm:p-6 rounded-xl shadow-lg ${colors.card} ${colors.border} border-t-4`}>
+                    <h2 className={`text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 ${colors.text}`}>Resize & Download</h2>
+                    <p className={`mb-3 sm:mb-4 text-sm sm:text-base ${colors.text}`}>Choose a size for your processed image.</p>
 
                     <div className="mb-4">
                         <label htmlFor="resize" className={`block text-sm font-medium mb-2 ${colors.text}`}>
@@ -404,14 +407,14 @@ const App = () => {
                             id="resize"
                             value={resizeOption}
                             onChange={(e) => setResizeOption(e.target.value)}
-                            className={`block w-full py-2 px-3 rounded-md shadow-sm border border-gray-600 ${colors.card} ${colors.text}`}
+                            className={`block w-full py-2 px-3 rounded-md shadow-sm border border-gray-600 ${colors.card} ${colors.text} text-sm sm:text-base`}
                             disabled={isLoading}
                         >
                             <option value="original">Original Size</option>
-                            <option value="passport">Passport Size (2x2 inches)</option>
-                            <option value="id_card">ID Card Size</option>
-                            <option value="web_thumbnail">Web Thumbnail (150x150)</option>
-                            <option value="social_media">Social Media (1080x1080)</option>
+                            <option value="passport">Passport Size (413x531 px)</option>
+                            <option value="id_card">ID Card Size (330x210 px)</option>
+                            <option value="web_thumbnail">Web Thumbnail (150x150 px)</option>
+                            <option value="social_media">Social Media (1080x1080 px)</option>
                             <option value="custom">Custom Size</option>
                         </select>
                     </div>
@@ -428,7 +431,7 @@ const App = () => {
                                     value={customWidth}
                                     onChange={(e) => setCustomWidth(e.target.value)}
                                     placeholder="e.g., 800"
-                                    className={`block w-full py-2 px-3 rounded-md shadow-sm border border-gray-600 ${colors.card} ${colors.text}`}
+                                    className={`block w-full py-2 px-3 rounded-md shadow-sm border border-gray-600 ${colors.card} ${colors.text} text-sm sm:text-base`}
                                     disabled={isLoading}
                                 />
                             </div>
@@ -442,7 +445,7 @@ const App = () => {
                                     value={customHeight}
                                     onChange={(e) => setCustomHeight(e.target.value)}
                                     placeholder="e.g., 600"
-                                    className={`block w-full py-2 px-3 rounded-md shadow-sm border border-gray-600 ${colors.card} ${colors.text}`}
+                                    className={`block w-full py-2 px-3 rounded-md shadow-sm border border-gray-600 ${colors.card} ${colors.text} text-sm sm:text-base`}
                                     disabled={isLoading}
                                 />
                             </div>
@@ -452,7 +455,7 @@ const App = () => {
                     <button
                         onClick={handleResizeImage}
                         disabled={!currentImageData || isLoading}
-                        className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 mb-6 ${colors.button} ${colors.text} shadow-md
+                        className={`w-full py-2 sm:py-3 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 mb-4 sm:mb-6 ${colors.button} ${colors.text} shadow-md
                                 ${(!currentImageData || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                     >
                         {isLoading ? 'Resizing...' : 'Apply Resize'}
@@ -461,7 +464,7 @@ const App = () => {
                     <button
                         onClick={handleDownloadImage}
                         disabled={!processedImage || isLoading}
-                        className={`w-full py-3 px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-lg
+                        className={`w-full py-2 sm:py-3 px-4 sm:px-6 rounded-full font-semibold transition-all duration-300 ${colors.button} ${colors.text} shadow-lg
                                 ${(!processedImage || isLoading) ? 'opacity-50 cursor-not-allowed' : colors.buttonHover}`}
                     >
                         Download Image
