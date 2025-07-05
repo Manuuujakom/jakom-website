@@ -80,7 +80,7 @@ const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
         <div className="mt-6 px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold rounded-full hover:bg-opacity-90 transition duration-300 transform hover:scale-105 shadow-md">
           Learn More
         </div>
-      </div>
+        </div>
     </Link>
   );
 };
@@ -533,9 +533,8 @@ const App = () => {
                   <Link to="/contact-us" className="px-12 py-4 bg-[#C9B072] text-[#0A1128] font-bold text-xl rounded-full shadow-2xl transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-pulse fade-in-up inline-flex items-center justify-content-center" ref={setSectionRef}>
                       Contact Us Now
                   </Link>
-              </section>
-            </>
-          } />
+              </>
+            } />
 
           {/* Routes for other pages (now correctly importing and rendering your actual page components) */}
           <Route path="/graphics-design" element={<GraphicsDesignPage />} />
@@ -557,3 +556,14 @@ const App = () => {
                 <Mail size={24} />
               </a>
               <a href="https://wa.me/">
+                <MessageSquare size={24} /> {/* Assuming you want a WhatsApp icon here */}
+              </a> {/* This closing tag was missing! */}
+            </div>
+          </div>
+        </footer>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
