@@ -80,7 +80,7 @@ const ServiceCard = ({ icon: Icon, title, description, delay, path }) => {
         <div className="mt-6 px-6 py-3 bg-[#4CAF50] text-[#F8F8F8] font-semibold rounded-full hover:bg-opacity-90 transition duration-300 transform hover:scale-105 shadow-md">
           Learn More
         </div>
-        </div>
+      </div>
     </Link>
   );
 };
@@ -496,7 +496,7 @@ const App = () => {
                           <p className="text-xl text-[#CCD2E3] leading-relaxed mb-8">
                               At JAKOM, we believe in nurturing talent from a young age. Our Kids Hub offers engaging and interactive programs designed to introduce children to the exciting world of technology, creativity, and problem-solving. Spark curiosity and build foundational skills for a brighter future!
                           </p>
-                          <Link to="/kids-hub" className="px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 inline-flex items-center justify-content-center">
+                          <Link to="/kids-hub" className="px-8 py-3 bg-[#C9B072] text-[#0A1128] font-semibold text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105 hover:bg-opacity-90 inline-flex items-center justify-content-content">
                               Explore Kids Hub
                           </Link>
                       </div>
@@ -533,8 +533,9 @@ const App = () => {
                   <Link to="/contact-us" className="px-12 py-4 bg-[#C9B072] text-[#0A1128] font-bold text-xl rounded-full shadow-2xl transition duration-300 transform hover:scale-105 hover:bg-opacity-90 animate-pulse fade-in-up inline-flex items-center justify-content-center" ref={setSectionRef}>
                       Contact Us Now
                   </Link>
-              </>
-            } />
+              </section> {/* <-- THIS WAS THE MISSING CLOSING TAG */}
+            </>
+          } />
 
           {/* Routes for other pages (now correctly importing and rendering your actual page components) */}
           <Route path="/graphics-design" element={<GraphicsDesignPage />} />
@@ -555,9 +556,9 @@ const App = () => {
               <a href="mailto:emmanuelomondiobare@gmail.com" className="hover:text-[#C9B072] transition duration-300" aria-label="Email Us">
                 <Mail size={24} />
               </a>
-              <a href="https://wa.me/">
+              <a href="https://wa.me/" className="hover:text-[#C9B072] transition duration-300" aria-label="Chat on WhatsApp">
                 <MessageSquare size={24} /> {/* Assuming you want a WhatsApp icon here */}
-              </a> {/* This closing tag was missing! */}
+              </a> 
             </div>
           </div>
         </footer>
