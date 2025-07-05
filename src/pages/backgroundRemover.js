@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useState, useEffect, useRef } from 'react';
 
 // Main App component
@@ -71,8 +70,8 @@ const App = () => {
             formData.append('image', file); // Send the file directly
 
             try {
-                // Use relative path for API call. Vercel will route this to api/index.py
-                const response = await fetch(`/api`, { // Changed to /api as the main endpoint
+                // IMPORTANT: Changed endpoint to /api/upload for the Node.js backend
+                const response = await fetch(`/api/upload`, {
                     method: 'POST',
                     body: formData,
                 });
@@ -111,9 +110,9 @@ const App = () => {
         }
     };
 
-    // Helper function to make actual API calls to the Python backend
+    // Helper function to make actual API calls to the Node.js backend
     const makeRealApiCall = async (endpoint, data) => {
-        if (!currentImageData && endpoint !== '/api') { // Only allow /api (upload) without currentImageData
+        if (!currentImageData && endpoint !== '/api/upload') { // Only allow /api/upload without currentImageData
             setMessage('Please upload an image first.');
             setIsLoading(false);
             return null;
@@ -131,7 +130,10 @@ const App = () => {
         // Append other data specific to the operation
         if (data instanceof FormData) {
             for (let pair of data.entries()) {
-                bodyToSend.append(pair[0], pair[1]);
+                // Ensure we don't duplicate 'image_data' if it's already added
+                if (pair[0] !== 'image_data') {
+                    bodyToSend.append(pair[0], pair[1]);
+                }
             }
         } else if (typeof data === 'object' && data !== null) {
             for (const key in data) {
@@ -140,7 +142,7 @@ const App = () => {
         }
 
         try {
-            // Use relative path for API call
+            // Use relative path for API call (e.g., /api/remove-background)
             const response = await fetch(`${endpoint}`, {
                 method: 'POST',
                 body: bodyToSend,
@@ -270,8 +272,10 @@ const App = () => {
 
     return (
         <div className={`min-h-screen ${colors.background} p-4 sm:p-8 font-inter`}>
+            {/* Tailwind CSS CDN and Font Link - typically these go in public/index.html or a global CSS file */}
             <script src="https://cdn.tailwindcss.com"></script>
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
             <h1 className={`text-3xl sm:text-4xl font-bold text-center mb-8 sm:mb-12 ${colors.text}`}>Image Processing Toolkit</h1>
 
             {/* Message display area */}
